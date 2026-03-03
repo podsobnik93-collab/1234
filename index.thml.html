@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Фитнес Бот — Эмулятор v4</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.phone{width:375px;height:780px;background:#fff;border-radius:40px;box-shadow:0 30px 80px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden;border:8px solid #222;position:relative}
+.tg-header{background:#2aabee;padding:12px 16px;display:flex;align-items:center;gap:10px;color:#fff;flex-shrink:0}
+.bot-avatar{width:40px;height:40px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px}
+.bot-info h3{font-size:15px;font-weight:600}.bot-info span{font-size:12px;opacity:.85}
+.chat{flex:1;overflow-y:auto;padding:10px 10px 6px;background:#e5ddd5;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:4px}.chat::-webkit-scrollbar-thumb{background:#bbb;border-radius:4px}
+.msg{max-width:80%;padding:8px 12px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.bot{background:#fff;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.msg.user{background:#dcf8c6;align-self:flex-end;border-bottom-right-radius:4px}
+.inline-kb{align-self:flex-start;display:flex;flex-direction:column;gap:5px;width:80%}
+.inline-row{display:flex;gap:5px}
+.inline-btn{background:#fff;border:1px solid #2aabee;color:#2aabee;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;text-align:center;transition:background .15s,color .15s;user-select:none;flex:1}
+.inline-btn:hover{background:#2aabee;color:#fff}.inline-btn:active{transform:scale(.97)}
+.reply-kb{background:#d0ccc8;padding:6px;display:none;flex-wrap:wrap;gap:5px;flex-shrink:0}
+.reply-btn{flex:1 1 calc(50% - 5px);background:#fff;border:none;border-radius:8px;padding:9px 6px;font-size:13px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:background .12s;user-select:none}
+.reply-btn:hover{background:#f0f0f0}.reply-btn:active{background:#e0e0e0}
+.typing{display:flex;gap:4px;padding:10px 12px;background:#fff;border-radius:16px;border-bottom-left-radius:4px;align-self:flex-start;box-shadow:0 1px 2px rgba(0,0,0,.1);width:fit-content}
+.dot{width:7px;height:7px;background:#bbb;border-radius:50%;animation:bounce 1s infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.input-area{display:flex;padding:8px;background:#f0f0f0;gap:6px;align-items:center;flex-shrink:0}
+.msg-input{flex:1;border:1px solid #ddd;border-radius:22px;padding:9px 14px;font-size:14px;outline:none;background:#fff}
+.send-btn{width:38px;height:38px;background:#2aabee;border:none;border-radius:50%;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.send-btn:hover{background:#1a9bd8}
+.timer-wrap{align-self:flex-start;background:#fff;border-radius:16px;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:12px 16px;text-align:center;animation:fadeIn .2s ease;width:80%}
+.timer-display{font-size:32px;font-weight:700;color:#2aabee;font-variant-numeric:tabular-nums;margin:6px 0}
+.timer-label{font-size:12px;color:#888}
+.timer-bar{width:100%;height:6px;background:#eee;border-radius:3px;margin:8px 0;overflow:hidden}
+.timer-fill{height:100%;background:linear-gradient(90deg,#2aabee,#1a9bd8);border-radius:3px;transition:width .3s linear}
+.timer-btns{display:flex;gap:6px;margin-top:6px}
+.timer-btns button{flex:1;padding:7px;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600}
+.timer-btns .t-stop{background:#ff5555;color:#fff}
+.timer-btns .t-add{background:#f39c12;color:#fff}
+.timer-btns .t-restart{background:#2aabee;color:#fff}
+.chart-wrap{align-self:flex-start;background:#fff;border-radius:16px;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:10px;width:85%;animation:fadeIn .2s ease}
+.chart-wrap canvas{width:100%;height:160px}
+
+
+/* ====== Calendar v2 (more readable) ====== */
+.cal2-wrap{width:100%;max-width:340px}
+.cal2-header{display:flex;align-items:center;gap:8px;margin:2px 0 10px}
+.cal2-title{flex:1;text-align:center;font-weight:700;color:#2d3436;font-size:15px}
+.cal2-nav{width:34px;height:34px;border-radius:10px;border:1px solid #dfe6e9;background:#fff;cursor:pointer;color:#2d3436;font-size:18px;line-height:1}
+.cal2-nav:hover{background:#f7f7f7}
+.cal2-nav:active{transform:scale(.98)}
+.cal2-grid{display:grid;grid-template-columns:38px repeat(7,1fr);gap:6px 6px;align-items:center}
+.cal2-h{font-size:11px;font-weight:700;text-align:center;color:#7f8c8d;letter-spacing:.2px}
+.cal2-h.cal2-weekend{color:#c0392b}
+.cal2-weeknum{font-size:12px;font-weight:800;text-align:center;color:#16a085}
+.cal2-cell{display:flex;justify-content:center}
+.cal2-daybtn{width:32px;height:32px;border-radius:12px;border:1px solid transparent;background:#f2f3f5;color:#2d3436;font-weight:700;font-size:13px;cursor:pointer;user-select:none}
+.cal2-daybtn:hover{filter:brightness(.98)}
+.cal2-daybtn:active{transform:scale(.98)}
+.cal2-daybtn--weekend{color:#c0392b;background:#fff1f1}
+.cal2-daybtn--workout{background:#d8f3f1;border-color:#20b2aa;color:#0b5e73}
+.cal2-daybtn--manual{background:#fff3cd;border-color:#f39c12;color:#8a5a00}
+.cal2-daybtn--today{background:#2563eb;border-color:#2563eb;color:#fff}
+.cal2-daybtn--empty{background:transparent;border-color:transparent;cursor:default}
+.cal2-note{margin-top:10px;font-size:12px;color:#636e72;line-height:1.35}
+.cal2-legend{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin-top:8px}
+.cal2-pill{display:inline-flex;align-items:center;gap:6px}
+.cal2-dot{width:10px;height:10px;border-radius:50%}
+.cal2-dot--workout{background:#20b2aa}
+.cal2-dot--manual{background:#f39c12}
+.cal2-dot--today{background:#2563eb}
+.cal2-dot--weekend{background:#c0392b}
+.cal2-count{margin-top:6px;font-weight:700;color:#2d3436}
+.cal2-details{margin-top:8px;padding:8px 10px;border-radius:10px;background:#f7f7f7;color:#2d3436;font-size:12px;line-height:1.35;white-space:pre-wrap}
+
+
+
+/* Calendar bubble: make it wider so the calendar fits nicely */
+.msg.bot.cal2-bubble{max-width:96%; width:96%;}
+@media (max-width:420px){
+  .msg.bot.cal2-bubble{max-width:98%; width:98%;}
+}
+/* Slightly tighter padding inside bubble for calendar */
+.msg.bot.cal2-bubble{padding:10px 10px;}
+
+
+/* Telegram Menu Styles */
+.cmd-popup-overlay {
+  display: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: transparent;
+  z-index: 1000;
+}
+.cmd-popup-overlay.active { display: block; }
+
+.cmd-popup-menu {
+  position: absolute;
+  bottom: 65px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  min-width: 240px;
+  max-width: 300px;
+  max-height: 350px;
+  overflow-y: auto;
+  z-index: 1001;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: bottom left;
+}
+
+.cmd-popup-menu.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.cmd-popup-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  font-size: 15px;
+  color: #222;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  transition: background 0.2s;
+  justify-content: flex-start;
+  gap: 12px;
+}
+.cmd-popup-item:last-child {
+  border-bottom: none;
+}
+.cmd-popup-item:active {
+  background: #f0f0f0;
+}
+.cmd-popup-command {
+  color: #888;
+  font-size: 13px;
+  margin-left: auto;
+}
+
+.input-area {
+  display: flex;
+  padding: 8px 10px;
+  background: #fff;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  border-top: 1px solid #e1e4e8;
+  position: relative;
+  z-index: 1002;
+}
+
+.cmd-menu-btn {
+  background: #5594d1;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.cmd-menu-btn:not(.active) {
+  background: #f0f4f8;
+  color: #5594d1;
+}
+
+.cmd-icon-close { display: none; }
+.cmd-menu-btn.active .cmd-icon-open { display: none; }
+.cmd-menu-btn.active .cmd-icon-close { display: inline; }
+
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #f0f4f8;
+  border-radius: 20px;
+  padding: 0 12px;
+  position: relative;
+}
+
+.clip-btn, .emoji-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #888;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.msg-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 8px;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+
+.mic-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #5594d1;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+.mic-btn.send-mode {
+  color: #fff;
+  background: #5594d1;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="tg-header">
+    <div class="bot-avatar">🤖</div>
+    <div class="bot-info"><h3>FitnessBot</h3><span>онлайн</span></div>
+  </div>
+  <div class="chat" id="chat"></div>
+  <div class="reply-kb" id="replyKb"></div>
+  
+  <!-- Popup overlay and menu -->
+  <div class="cmd-popup-overlay" id="cmdPopupOverlay"></div>
+  <div class="cmd-popup-menu" id="cmdPopupMenu">
+    <!-- Menu items will be injected here by JS -->
+  </div>
+
+  <div class="input-area">
+    <button class="cmd-menu-btn" id="cmdMenuBtn">
+      <span class="cmd-icon-open">☰</span>
+      <span class="cmd-icon-close">✕</span>
+      Меню
+    </button>
+    <div class="input-wrapper">
+      <button class="clip-btn">📎</button>
+      <input class="msg-input" id="msgInput" placeholder="Сообщение..." />
+      <button class="emoji-btn">⌨️</button>
+    </div>
+    <button class="mic-btn" id="sendBtn">🎙️</button>
+  </div>
+</div>
+<script>
+const chat=document.getElementById("chat"),replyKb=document.getElementById("replyKb"),msgInput=document.getElementById("msgInput"),sendBtn=document.getElementById("sendBtn");
+const cmdMenuBtn=document.getElementById("cmdMenuBtn"),cmdPopupMenu=document.getElementById("cmdPopupMenu"),cmdPopupOverlay=document.getElementById("cmdPopupOverlay");
+
+// Menu configuration
+const MENU_ITEMS = [
+  { text: "📅 Программы", cmd: "/programs" },
+  { text: "🍎 Питание", cmd: "/nutrition" },
+  { text: "📅 Календарь", cmd: "/calendar" },
+  { text: "🛠 Органайзер", cmd: "/organizer" },
+  { text: "👤 Профиль", cmd: "/profile" },
+];
+
+function initMenu() {
+  MENU_ITEMS.forEach(item => {
+    let div = document.createElement("div");
+    div.className = "cmd-popup-item";
+
+    let spanText = document.createElement("span");
+    spanText.innerText = item.text;
+
+    let spanCmd = document.createElement("span");
+    spanCmd.className = "cmd-popup-command";
+    spanCmd.innerText = item.cmd;
+
+    div.appendChild(spanText);
+    div.appendChild(spanCmd);
+
+    div.onclick = () => {
+      toggleMenu(false);
+      {
+        addMsg(item.text, "user");
+        handleText(item.text);
+      }
+    };
+    cmdPopupMenu.appendChild(div);
+  });
+}
+initMenu();
+
+function toggleMenu(forceState) {
+  let isActive = forceState !== undefined ? forceState : !cmdMenuBtn.classList.contains("active");
+  if(isActive) {
+    cmdMenuBtn.classList.add("active");
+    cmdPopupMenu.classList.add("active");
+    cmdPopupOverlay.classList.add("active");
+  } else {
+    cmdMenuBtn.classList.remove("active");
+    cmdPopupMenu.classList.remove("active");
+    cmdPopupOverlay.classList.remove("active");
+  }
+}
+
+cmdMenuBtn.addEventListener("click", () => toggleMenu());
+cmdPopupOverlay.addEventListener("click", () => toggleMenu(false));
+
+// Update microphone icon to send arrow when typing
+msgInput.addEventListener("input", () => {
+  if(msgInput.value.trim().length > 0) {
+    sendBtn.classList.add("send-mode");
+    sendBtn.innerText = "➤";
+  } else {
+    sendBtn.classList.remove("send-mode");
+    sendBtn.innerText = "🎙️";
+  }
+});
+
+const STORAGE_KEY="fitnessbot_v4";
+function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({userData,state,onboardStep,weightHistory,workoutLog,foodHistory,exerciseHistory,plan,waterHistory,calendarMarks}))}catch(e){}}
+function loadData(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
+function clearData(){localStorage.removeItem(STORAGE_KEY)}
+let state="start",userData={},onboardStep=0,weightHistory=[],workoutLog=[];
+let foodHistory={},exerciseHistory={},plan={},waterHistory={};
+let calendarMarks={};
+let timerInterval=null,timerRemaining=0,timerTotal=0,timerNumEl=null,timerFillEl=null;
+
+const GUIDE_DB={
+  chest:{title:"💪 Грудь",articles:{bench:{title:"Жим штанги лёжа",text:"Жим штанги лежа — техника.\n1. Установи ограничители!\n2. Гриф на уровне глаз, лопатки сведены.\n3. Хват чуть шире плеч, закрытый.\n4. Локти под 45-60°, гриф к низу груди.\n5. Жим вверх по дуге.\nОшибки: отскок, локти под 90°, отрыв таза."}}} ,
+  back:{title:"🔙 Спина",articles:{}},legs:{title:"🦵 Ноги",articles:{}},
+  glutes:{title:"🍑 Ягодицы",articles:{}},shoulders:{title:"🧍 Плечи",articles:{}},
+  arms:{title:"💪 Руки",articles:{}},calves:{title:"🦵 Голень",articles:{}},
+  core:{title:"🧘 Кор",articles:{}}
+};
+
+const PROGRAMS={
+  fullbody:{name:"🏋️ Фулбоди (Новичок)",desc:"Всё тело за 1 тренировку — 3 раза в неделю\n📅 Пн / Ср / Пт",
+    days:[
+      {name:"День А — Жим + Тяга + Присед",exercises:[
+        {mgKey:"chest",catKey:"base",exIdx:0},{mgKey:"back",catKey:"width",exIdx:0},
+        {mgKey:"legs",catKey:"quads",exIdx:0},{mgKey:"shoulders",catKey:"press",exIdx:0},
+        {mgKey:"abs",catKey:"iso",exIdx:0}]},
+      {name:"День Б — Гантели + Блоки",exercises:[
+        {mgKey:"chest",catKey:"base",exIdx:1},{mgKey:"back",catKey:"thick",exIdx:2},
+        {mgKey:"legs",catKey:"hams",exIdx:0},{mgKey:"shoulders",catKey:"mid",exIdx:0},
+        {mgKey:"abs",catKey:"dyn",exIdx:0}]},
+      {name:"День В — Тренажёры + Изоляция",exercises:[
+        {mgKey:"chest",catKey:"iso",exIdx:2},{mgKey:"back",catKey:"width",exIdx:1},
+        {mgKey:"legs",catKey:"quads",exIdx:3},{mgKey:"triceps",catKey:"block",exIdx:0},
+        {mgKey:"biceps",catKey:"base",exIdx:0}]}]},
+  split3:{name:"💪 3-дневный сплит",desc:"Классика для набора массы\n📅 Пн / Ср / Пт",
+    days:[
+      {name:"День 1 — Грудь + Бицепс + Пресс",exercises:[
+        {mgKey:"chest",catKey:"base",exIdx:0},{mgKey:"chest",catKey:"base",exIdx:1},
+        {mgKey:"chest",catKey:"iso",exIdx:0},{mgKey:"biceps",catKey:"base",exIdx:0},
+        {mgKey:"biceps",catKey:"iso",exIdx:0},{mgKey:"abs",catKey:"dyn",exIdx:3}]},
+      {name:"День 2 — Спина + Трицепс + Шея",exercises:[
+        {mgKey:"back",catKey:"width",exIdx:0},{mgKey:"back",catKey:"thick",exIdx:0},
+        {mgKey:"back",catKey:"traps",exIdx:0},{mgKey:"triceps",catKey:"bar",exIdx:0},
+        {mgKey:"triceps",catKey:"block",exIdx:0},{mgKey:"neck",catKey:"flex",exIdx:1}]},
+      {name:"День 3 — Ноги + Плечи + Голень",exercises:[
+        {mgKey:"legs",catKey:"quads",exIdx:0},{mgKey:"legs",catKey:"hams",exIdx:0},
+        {mgKey:"shoulders",catKey:"press",exIdx:0},{mgKey:"shoulders",catKey:"mid",exIdx:0},
+        {mgKey:"calves",catKey:"base",exIdx:0},{mgKey:"abs",catKey:"iso",exIdx:0}]}]},
+  booty:{name:"🍑 Booty Builder",desc:"Фокус на ягодицы и кор — 3 дня в неделю\n📅 Пн / Ср / Пт",
+    days:[
+      {name:"Тренировка А — Тяжёлая база",exercises:[
+        {mgKey:"glutes",catKey:"base",exIdx:1},{mgKey:"glutes",catKey:"base",exIdx:0},
+        {mgKey:"glutes",catKey:"thrusts",exIdx:0},{mgKey:"glutes",catKey:"abduction",exIdx:4},
+        {mgKey:"abs",catKey:"iso",exIdx:0}]},
+      {name:"Тренировка Б — Верх + Осанка",exercises:[
+        {mgKey:"back",catKey:"width",exIdx:1},{mgKey:"shoulders",catKey:"mid",exIdx:0},
+        {mgKey:"shoulders",catKey:"rear",exIdx:0},{mgKey:"biceps",catKey:"base",exIdx:1},
+        {mgKey:"abs",catKey:"dyn",exIdx:0}]},
+      {name:"Тренировка В — Изоляция ягодиц",exercises:[
+        {mgKey:"glutes",catKey:"kickbacks",exIdx:0},{mgKey:"glutes",catKey:"kickbacks",exIdx:2},
+        {mgKey:"glutes",catKey:"thrusts",exIdx:2},{mgKey:"glutes",catKey:"abduction",exIdx:5},
+        {mgKey:"abs",catKey:"dyn",exIdx:1}]}]},
+  home:{name:"🏠 Домашний (Свой вес)",desc:"Только вес тела — без тренажёров и железа\n🏠 Дома или на улице",
+    days:[
+      {name:"День 1 — Верх тела",exercises:[
+        {mgKey:"chest",catKey:"bw",exIdx:0},{mgKey:"chest",catKey:"bw",exIdx:2},
+        {mgKey:"biceps",catKey:"bw",exIdx:0},{mgKey:"triceps",catKey:"bw",exIdx:1},
+        {mgKey:"abs",catKey:"iso",exIdx:0}]},
+      {name:"День 2 — Низ тела",exercises:[
+        {mgKey:"legs",catKey:"quads",exIdx:6},{mgKey:"legs",catKey:"hams",exIdx:2},
+        {mgKey:"glutes",catKey:"thrusts",exIdx:1},{mgKey:"glutes",catKey:"abduction",exIdx:3},
+        {mgKey:"abs",catKey:"dyn",exIdx:0}]},
+      {name:"День 3 — Всё тело",exercises:[
+        {mgKey:"chest",catKey:"bw",exIdx:1},{mgKey:"biceps",catKey:"bw",exIdx:1},
+        {mgKey:"legs",catKey:"hams",exIdx:3},{mgKey:"glutes",catKey:"kickbacks",exIdx:4},
+        {mgKey:"abs",catKey:"dyn",exIdx:5}]}]}
+};
+
+const EXERCISES={
+chest:{name:"💪 Грудь",cats:{
+  base:{name:"🏋️ Базовые",list:[
+    {name:"Жим штанги лёжа",muscles:"Грудь (масса)",sets:"4×8-12",rest:90,tech:"1. Ляг на скамью, ноги на полу\n2. Штанга чуть шире плеч\n3. Опускай до касания груди"},
+    {name:"Жим гантелей лёжа",muscles:"Грудь, Передние дельты",sets:"4×10-12",rest:90,tech:"1. Гантели на уровне груди\n2. Полная амплитуда\n3. Не стукай гантели вверху"},
+    {name:"Жим штанги на наклонной (30°)",muscles:"Верхняя грудь",sets:"3×8-10",rest:90,tech:"1. Скамья 30-45°\n2. Гриф к верху груди\n💡 Выжимай строго вверх"}]},
+  iso:{name:"🎯 Изоляция",list:[
+    {name:"Разводка гантелей лёжа",muscles:"Растяжение грудных",sets:"3×12-15",rest:60,tech:"1. Гантели вверху, ладони друг к другу\n2. Разводи дугой, локти чуть согнуты"},
+    {name:"Кроссовер в блоке",muscles:"Нижняя грудь",sets:"3×15",rest:45,tech:"1. Стоя между блоками\n2. Своди руки перед собой\n3. Локти фиксированы"},
+    {name:"Пек-дек (бабочка)",muscles:"Грудь (изоляция)",sets:"3×15",rest:45,tech:"1. Спина прижата к спинке\n2. Своди до касания\n3. Не делай рывков"}]},
+  bw:{name:"🤸 С весом тела",list:[
+    {name:"Отжимания",muscles:"Грудь, Трицепс",sets:"3×10-20",rest:60,tech:"1. Руки чуть шире плеч\n2. Тело — прямая линия\n3. Грудь касается пола"},
+    {name:"Отжимания широким хватом",muscles:"Внешняя грудь",sets:"3×15",rest:60,tech:"1. Руки значительно шире плеч"},
+    {name:"Отжимания на брусьях (грудь)",muscles:"Нижняя грудь + Трицепс",sets:"3×8-12",rest:90,tech:"1. Наклон корпуса вперёд\n2. Опускайся до 90° в локтях"}]}}},
+back:{name:"🔙 Спина",cats:{
+  width:{name:"📐 Ширина",list:[
+    {name:"Подтягивания на турнике",muscles:"Широчайшие",sets:"4×максимум",rest:90,tech:"1. Хват шире плеч\n2. Тяни грудь к перекладине\n3. Медленно опускайся"},
+    {name:"Тяга вертикального блока (широкий)",muscles:"Широчайшие",sets:"4×8-12",rest:90,tech:"1. Широкий хват\n2. Слегка отклони корпус\n3. Тяни к груди"},
+    {name:"Тяга вертикального блока (узкий)",muscles:"Широчайшие (низ)",sets:"4×8-12",rest:90,tech:"1. V-рукоять\n2. Тяни к низу груди\n3. Локти вдоль туловища"},
+    {name:"Тяга вертикальная в Хаммере",muscles:"Широчайшие",sets:"3×10-12",rest:90,tech:"1. Рычажный тренажёр\n2. Тяни рукояти вниз, грудь на спинке"}]},
+  thick:{name:"📦 Толщина",list:[
+    {name:"Тяга штанги в наклоне (прямой хват)",muscles:"Ромбовидные, Широчайшие",sets:"4×8-10",rest:90,tech:"1. Наклон 45°, спина прямая\n2. Тяни к поясу"},
+    {name:"Тяга штанги в наклоне (обратный хват)",muscles:"Широчайшие, Бицепс",sets:"4×8-10",rest:90,tech:"1. Хват снизу\n2. Тяни к животу"},
+    {name:"Тяга гантели в наклоне",muscles:"Широчайшие",sets:"3×10-12 на руку",rest:60,tech:"1. Упор на скамью\n2. Тяни к тазу\n3. Не вращай корпус"},
+    {name:"Тяга Т-грифа",muscles:"Толщина спины",sets:"4×8-10",rest:90,tech:"1. Встань над Т-грифом\n2. Прямая спина, тяни вес к груди"},
+    {name:"Пуловер с гантелью",muscles:"Зубчатые, Широчайшие",sets:"3×10-12",rest:60,tech:"1. Ляг поперёк скамьи\n2. Опускай гантель за голову\n3. Возвращай над грудью"}]},
+  traps:{name:"🦣 Трапеции",list:[
+    {name:"Шраги со штангой",muscles:"Трапеции",sets:"4×12-15",rest:60,tech:"1. Штанга в руках\n2. Поднимай плечи к ушам"},
+    {name:"Шраги с гантелями",muscles:"Трапеции",sets:"4×12-15",rest:60,tech:"1. Гантели по бокам\n2. Задержка 1 сек вверху"},
+    {name:"Становая тяга",muscles:"Разгибатели, Трапеции, Ноги",sets:"4×6-8",rest:120,tech:"1. Штанга у голеней\n2. Спина прямая, таз отведён\n3. Поднимай за счёт ног"}]},
+  low:{name:"🔩 Поясница",list:[
+    {name:"Гиперэкстензия",muscles:"Разгибатели спины",sets:"3×15",rest:45,tech:"1. Зафиксируй ноги\n2. Плавно опускай корпус\n3. Поднимайся до прямой линии"},
+    {name:"Гиперэкстензия с весом",muscles:"Разгибатели спины",sets:"3×12",rest:60,tech:"1. Блин к груди\n2. Плавный контроль"}]}},
+},
+legs:{name:"🦵 Ноги",cats:{
+  quads:{name:"🦵 Квадрицепс",list:[
+    {name:"Приседания со штангой",muscles:"Квадрицепс, Ягодицы",sets:"4×8-12",rest:120,tech:"1. Штанга на трапециях\n2. Приседай до параллели\n3. Колени по носкам"},
+    {name:"Приседания с гантелями",muscles:"Квадрицепс, Ягодицы",sets:"4×10-15",rest:90,tech:"1. Гантели в руках\n2. Приседай, отводя таз назад"},
+    {name:"Жим ногами (узкая постановка)",muscles:"Внешний квадрицепс",sets:"4×10-12",rest:90,tech:"1. Ступни близко\n2. Опускай до 90°"},
+    {name:"Жим ногами (широкая постановка)",muscles:"Внутр. бедро, Ягодицы",sets:"4×10-12",rest:90,tech:"1. Ступни широко\n2. Глубокая амплитуда"},
+    {name:"Разгибания ног сидя",muscles:"Квадрицепс (изоляция)",sets:"3×12-15",rest:60,tech:"1. Спина прижата\n2. Разгибай до конца"},
+    {name:"Зашагивания на тумбу",muscles:"Ягодицы, Квадрицепс",sets:"3×10-12 на ногу",rest:90,tech:"1. Гантели в руках\n2. Шаг на тумбу всей стопой"},
+    {name:"Стульчик (у стены)",muscles:"Квадрицепс",sets:"3×45-60 сек",rest:60,tech:"1. Прижмись спиной к стене\n2. Бёдра параллельны полу (90°)"}]},
+  hams:{name:"🍑 Бицепс бедра",list:[
+    {name:"Сгибание ног лёжа",muscles:"Бицепс бедра",sets:"3×12-15",rest:60,tech:"1. Таз прижат\n2. Сгибай до максимума"},
+    {name:"Сгибание ног сидя",muscles:"Бицепс бедра",sets:"3×12-15",rest:60,tech:"1. Спина прижата\n2. Максимальное сокращение"},
+    {name:"Выпады на месте",muscles:"Квадрицепс, Бицепс бедра",sets:"3×12 на ногу",rest:60,tech:"1. Одна нога впереди\n2. Опускайся вниз"},
+    {name:"Выпады с шагом назад",muscles:"Бицепс бедра, Ягодицы",sets:"3×12 на ногу",rest:60,tech:"1. Шаг назад\n2. Отталкивайся передней пяткой"}]},
+  adduct:{name:"🦴 Приводящие",list:[
+    {name:"Сведения ног сидя",muscles:"Внутренняя часть бедра",sets:"3×15-20",rest:60,tech:"1. Сядь в тренажёр\n2. Плавно своди подушки"}]}}},
+glutes:{name:"🍑 Ягодицы",cats:{
+  base:{name:"🏋️ Базовые",list:[
+    {name:"Болгарские приседания",muscles:"Ягодичные, Квадрицепс",sets:"3×10-12 на ногу",rest:90,tech:"1. Нога сзади на скамье\n2. Голень передней ноги вертикальна\n3. Наклон вперёд — акцент на ягодицы"},
+    {name:"Румынская тяга (штанга / гантели / Смит)",muscles:"Ягодичные, Бицепс бедра",sets:"4×8-12",rest:90,tech:"1. Ноги чуть согнуты, таз назад\n2. Спина прямая\n3. Поднимайся сжимая ягодицы"},
+    {name:"Мёртвая тяга",muscles:"Бицепс бедра, Ягодичные",sets:"4×8-10",rest:90,tech:"1. Ноги почти прямые\n2. Таз фиксирован, наклон за счёт поясницы"},
+    {name:"Становая тяга на одной ноге",muscles:"Ягодичные, Баланс",sets:"3×10-12 на ногу",rest:60,tech:"1. Гантели или штанга\n2. Отводи ногу назад, наклоняя корпус"},
+    {name:"Сумо присед со штангой",muscles:"Ягодичные, Приводящие",sets:"4×10-12",rest:90,tech:"1. Широкая постановка ног, носки врозь\n2. Глубокий сед"},
+    {name:"Наклоны со штангой (Good Mornings)",muscles:"Ягодичные, Поясница",sets:"3×10-12",rest:90,tech:"1. Штанга на плечах\n2. Наклон вперёд, таз назад"},
+    {name:"Приседания с рукоятью в блоке",muscles:"Ягодичные",sets:"3×12-15",rest:60,tech:"1. Стоя у блока, рукоять между ног\n2. Отводи таз назад\n3. Сжимай ягодицы выпрямляясь"}]},
+  thrusts:{name:"🌉 Мосты",list:[
+    {name:"Ягодичный мост на скамье (Hip Thrust)",muscles:"Большая ягодичная",sets:"4×10-12",rest:90,tech:"1. Лопатки на скамье, штанга/гантель/Смит на бёдрах\n2. Опускай таз вниз\n3. Мощно выталкивай вверх\n💡 Главное упражнение для объёма ягодиц"},
+    {name:"Ягодичный мост на полу",muscles:"Большая ягодичная",sets:"3×15-20",rest:60,tech:"1. Лёжа на спине, ноги согнуты\n2. Выталкивай таз вверх\n3. Без веса или с блином на тазу"},
+    {name:"Гиперэкстензия на ягодицы",muscles:"Большая ягодичная",sets:"3×15",rest:60,tech:"1. Подушка ниже таза\n2. Скругли спину\n3. Поднимайся только сжатием ягодиц"},
+    {name:"Жим одной ногой в гравитоне",muscles:"Нижняя часть ягодичных",sets:"3×12 на ногу",rest:60,tech:"1. Опирайся одной ногой на платформу\n2. Дави пяткой вниз"}]},
+  kickbacks:{name:"🐴 Отведения назад",list:[
+    {name:"Отведение ноги назад в блоке",muscles:"Большая ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Манжета, нижний блок\n2. Слегка наклонись вперёд\n3. Отводи прямую ногу назад"},
+    {name:"Разгибание бедра в блоке стоя",muscles:"Большая ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Полная амплитуда\n2. Не прогибай поясницу"},
+    {name:"Отведение ноги вверх в блоке (упор в лавку)",muscles:"Большая ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Упрись коленями в скамью\n2. Выталкивай ногу назад-вверх"},
+    {name:"Отведение ноги назад в тренажёре",muscles:"Большая ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Стоя в тренажёре (маятник)\n2. Давй в валик"},
+    {name:"Отведение ноги назад в упоре",muscles:"Большая ягодичная",sets:"3×15-20 на ногу",rest:45,tech:"1. На четвереньках\n2. Отводи ногу вверх\n💡 С гантелью или утяжелителем"},
+    {name:"Отведение ноги назад «ласточка»",muscles:"Ягодицы, Баланс",sets:"3×15-20 на ногу",rest:45,tech:"1. Стоя на одной ноге\n2. Наклон вперёд — нога назад"}]},
+  abduction:{name:"🦀 Отведения в сторону",list:[
+    {name:"Разведение ног сидя",muscles:"Средняя ягодичная",sets:"3×15-20",rest:45,tech:"1. Тренажёр\n2. Разводи бёдра в стороны"},
+    {name:"Отведение ног стоя в тренажёре",muscles:"Средняя ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Валик сбоку\n2. Отводи ногу в сторону"},
+    {name:"Отведение ноги в сторону в блоке",muscles:"Средняя ягодичная",sets:"3×15 на ногу",rest:45,tech:"1. Манжета, нижний блок\n2. Отводи ногу в сторону"},
+    {name:"Отведение ноги в сторону в упоре",muscles:"Средняя ягодичная",sets:"3×15-20",rest:45,tech:"1. На четвереньках — пожарный гидрант\n2. Поднимай согнутую ногу в сторону"},
+    {name:"Махи в сторону с резинкой",muscles:"Средняя ягодичная",sets:"3×20 на ногу",rest:45,tech:"1. Резинка выше колен\n2. Стоя, отводи ногу в сторону"},
+    {name:"Краб с резинкой",muscles:"Средняя ягодичная",sets:"3×20 шагов",rest:45,tech:"1. Резинка на бёдрах\n2. Полуприсед\n3. Шаги в сторону"}]}},
+},
+biceps:{name:"💪 Бицепс",cats:{
+  base:{name:"🏋️ Базовые",list:[
+    {name:"Подъём штанги на бицепс",muscles:"Бицепс (масса)",sets:"3×10-12",rest:60,tech:"1. Стоя, спина прямая\n2. Хват снизу\n3. Сгибай без раскачки"},
+    {name:"Подъём гантелей с супинацией",muscles:"Бицепс (форма)",sets:"3×10-12",rest:60,tech:"1. В нижней точке ладони к корпусу\n2. При подъёме разворачивай кисть"},
+    {name:"Молотки с гантелями",muscles:"Брахиалис, Предплечье",sets:"3×12",rest:60,tech:"1. Нейтральный хват\n2. Без вращения кисти"},
+    {name:"Сгибание с EZ-грифом",muscles:"Внешняя головка",sets:"3×10-12",rest:60,tech:"1. Узкие изгибы грифа\n2. Локти прижаты к бокам"}]},
+  iso:{name:"🎯 Изоляция",list:[
+    {name:"Концентрированные сгибания",muscles:"Пик бицепса",sets:"3×12-15 на руку",rest:45,tech:"1. Сидя, упри локоть в бедро\n2. Полностью разгибай руку"},
+    {name:"Сгибание на наклонной скамье",muscles:"Длинная головка",sets:"3×10-12",rest:60,tech:"1. Скамья 45-60°\n2. Руки свободно свисают"},
+    {name:"Скамья Скотта (широкий хват)",muscles:"Внутренняя головка",sets:"3×10-12",rest:60,tech:"1. Упрись подмышками в парту\n2. Хват шире плеч"},
+    {name:"Скамья Скотта (одной рукой)",muscles:"Изоляция бицепса",sets:"3×12 на руку",rest:45,tech:"1. С гантелью или блоком"}]},
+  block:{name:"⚡ В блоке",list:[
+    {name:"Сгибание в блоке прямой рукоятью",muscles:"Бицепс",sets:"3×12-15",rest:45,tech:"1. Лицом к нижнему блоку\n2. Хват снизу"},
+    {name:"Сгибание в блоке (на корточках)",muscles:"Бицепс (изоляция)",sets:"3×12-15",rest:45,tech:"1. На корточках\n2. Локти упираются в колени"},
+    {name:"Сгибание в блоке одной рукой",muscles:"Бицепс",sets:"3×12 на руку",rest:45,tech:"1. Стоя боком к блоку"}]},
+  bw:{name:"🤸 С весом тела",list:[
+    {name:"Подтягивания обратным хватом",muscles:"Бицепс, Широчайшие",sets:"3×максимум",rest:90,tech:"1. Хват снизу (ладони к себе)\n2. Тянись подбородком к перекладине"},
+    {name:"Подтягивания параллельным хватом",muscles:"Брахиалис, Предплечья",sets:"3×максимум",rest:90,tech:"1. Узкий параллельный хват"}]}},
+},
+triceps:{name:"🧲 Трицепс",cats:{
+  bw:{name:"🤸 С весом тела",list:[
+    {name:"Отжимания на брусьях (трицепс)",muscles:"Трицепс",sets:"3×8-12",rest:90,tech:"1. Корпус вертикально\n2. Локти строго назад"},
+    {name:"Обратные отжимания от лавки",muscles:"Трицепс",sets:"3×12-15",rest:60,tech:"1. Руки на краю скамьи\n2. Сгибай локти до 90°"},
+    {name:"Отжимания от пола узким хватом",muscles:"Трицепс",sets:"3×10-15",rest:60,tech:"1. Ладони уже ширины плеч\n2. Локти прижаты"}]},
+  bar:{name:"🏋️ Со штангой",list:[
+    {name:"Жим штанги лёжа узким хватом",muscles:"Латеральная головка",sets:"4×8-10",rest:90,tech:"1. Хват чуть уже плеч\n2. Локти вдоль туловища"}]},
+  french:{name:"🧠 Французский жим",list:[
+    {name:"Французский жим гантелью стоя",muscles:"Длинная головка",sets:"3×10-12",rest:60,tech:"1. Гантель за головой\n2. Спина ровная"},
+    {name:"Французский жим гантелями лёжа",muscles:"Медиальная головка",sets:"3×10-12",rest:60,tech:"1. По гантели в каждой руке\n2. Опускай к ушам"}]},
+  block:{name:"⚡ В блоке",list:[
+    {name:"Разгибание в блоке канатом",muscles:"Латеральная головка",sets:"3×12-15",rest:45,tech:"1. Локти прижаты к рёбрам\n2. Разводи концы каната в стороны"},
+    {name:"Разгибание прямой рукоятью (хват сверху)",muscles:"Все головки",sets:"3×12-15",rest:45,tech:"1. Хват сверху\n2. Лёгкий наклон вперёд"},
+    {name:"Разгибание прямой рукоятью (хват снизу)",muscles:"Медиальная головка",sets:"3×12-15",rest:45,tech:"1. Хват снизу (ладони вверх)"},
+    {name:"Разгибание в блоке одной рукой",muscles:"Изоляция",sets:"3×12 на руку",rest:45,tech:"1. Поочерёдная работа"},
+    {name:"Разгибание из-за головы канатом",muscles:"Длинная головка",sets:"3×12-15",rest:45,tech:"1. Спиной к блоку\n2. Канат из-за головы вперёд"}]}},
+},
+shoulders:{name:"🧍 Плечи",cats:{
+  press:{name:"🏋️ Жимы",list:[
+    {name:"Армейский жим стоя",muscles:"Передние + средние дельты",sets:"4×6-8",rest:90,tech:"1. Гриф у ключиц\n2. Выжимай строго вверх\n3. Не отклоняй корпус"},
+    {name:"Жим гантелей стоя/сидя",muscles:"Все дельты",sets:"4×8-10",rest:90,tech:"1. Гантели на уровне ушей\n2. Выжимай вверх\n3. Не прогибай поясницу"},
+    {name:"Жим в тренажёре Смита",muscles:"Дельты",sets:"3×10-12",rest:90,tech:"1. Гриф перед головой\n2. Опускай до ушей"}]},
+  mid:{name:"📐 Средняя дельта",list:[
+    {name:"Махи гантелями в стороны",muscles:"Средняя дельта",sets:"3×15-20",rest:45,tech:"1. До уровня плеч\n2. Мизинец выше большого пальца\n3. Без инерции"},
+    {name:"Отведение руки в сторону в блоке",muscles:"Средняя дельта",sets:"3×12-15 на руку",rest:45,tech:"1. Боком к нижнему блоку\n2. Отводи руку строго в сторону"},
+    {name:"Отведение рук сидя в тренажёре",muscles:"Средняя дельта",sets:"3×15",rest:45,tech:"1. Локти согнуты\n2. Разводи руки до уровня плеч"},
+    {name:"Тяга штанги к подбородку",muscles:"Средняя дельта + Трапеции",sets:"4×10-12",rest:60,tech:"1. Узкий хват — больше дельты\n2. Локти выше кистей"}]},
+  front:{name:"🔵 Передняя дельта",list:[
+    {name:"Махи гантелями вперёд",muscles:"Передняя дельта",sets:"3×12-15",rest:45,tech:"1. До уровня плеч\n2. Не раскачивайся"},
+    {name:"Махи в Хаммере",muscles:"Передняя дельта",sets:"3×12-15",rest:45,tech:"1. Руки вперёд-вверх\n2. Плавное натяжение"},
+    {name:"Подъём блина с поворотом 90°",muscles:"Передняя дельта",sets:"3×12",rest:45,tech:"1. Поднимай блин перед собой\n2. В верхней точке поворот горизонтально"}]},
+  rear:{name:"🔴 Задняя дельта",list:[
+    {name:"Махи в наклоне",muscles:"Задняя дельта",sets:"3×15-20",rest:45,tech:"1. Наклон до параллели\n2. Разводи руки\n3. Локти назад-вверх"},
+    {name:"Протяжка канатом (Face Pull)",muscles:"Задняя дельта",sets:"3×15",rest:45,tech:"1. Тяни к лицу\n2. Локти в стороны\n3. Лопатки сводятся"}]}},
+},
+abs:{name:"🧘 Пресс",cats:{
+  iso:{name:"⏱ Статика",list:[
+    {name:"Планка",muscles:"Весь кор",sets:"3×30-60 сек",rest:45,tech:"1. Упор на предплечья\n2. Тело прямая линия\n3. Напряги пресс и ягодицы"},
+    {name:"Боковая планка на локте",muscles:"Косые мышцы",sets:"3×30 сек на сторону",rest:45,tech:"1. Упор на предплечье, тело боком\n2. Таз не опускай"}]},
+  dyn:{name:"🔄 Динамика",list:[
+    {name:"Частичный подъём туловища лёжа",muscles:"Прямая мышца живота",sets:"3×15-20",rest:45,tech:"1. Ноги согнуты\n2. Поднимай только лопатки\n3. Выдыхай на подъёме"},
+    {name:"Диагональное скручивание",muscles:"Косые мышцы",sets:"3×15 на сторону",rest:45,tech:"1. Тяни плечо к противоположному колену\n2. Не дави на шею"},
+    {name:"Обратные скручивания",muscles:"Нижний пресс",sets:"3×15-20",rest:45,tech:"1. Лёжа на спине\n2. Подтягивай колени к груди, отрывая таз\n3. Опускай плавно"},
+    {name:"Подъём ног в висе на локтях",muscles:"Нижний пресс",sets:"3×12-15",rest:60,tech:"1. Упор на локти в тренажёре\n2. Поднимай ноги до параллели\n3. Скручивай таз"},
+    {name:"Скручивание в верхнем блоке (Молитва)",muscles:"Прямая мышца",sets:"3×15",rest:45,tech:"1. На коленях перед блоком\n2. Канат за головой\n3. Скручивайся вниз"},
+    {name:"Ножницы",muscles:"Нижний пресс",sets:"3×30-40 сек",rest:45,tech:"1. Лёжа, поясница прижата\n2. Прямые ноги приподняты\n3. Перекрёстные махи"},
+    {name:"Велосипед",muscles:"Косые + прямые",sets:"3×20 на сторону",rest:45,tech:"1. Поочерёдно тяни локоть к колену\n2. Не тяни за шею"}]}},
+},
+calves:{name:"🦵 Голень",cats:{
+  base:{name:"🔥 Икроножные",list:[
+    {name:"Подъём на носки стоя на платформе",muscles:"Икроножные",sets:"4×15-20",rest:45,tech:"1. Стоя на краю подставки (Смит / блин / гантели / свой вес)\n2. Опускай пятки максимально вниз\n3. Мощно поднимайся на носки\n4. Задержка 1 сек вверху"}]},
+  soleus:{name:"🎯 Камбаловидные",list:[
+    {name:"Подъём на носки сидя в тренажёре",muscles:"Камбаловидная мышца",sets:"4×15-20",rest:45,tech:"1. Сядь в тренажёр, валик на бёдра\n2. Поднимай вес носками\n💡 Строит объём голени"}]}},
+},
+neck:{name:"🦒 Шея",cats:{
+  flex:{name:"💪 Укрепление",list:[
+    {name:"Сгибание шеи с диском",muscles:"Сгибатели шеи",sets:"3×15-20",rest:45,tech:"1. Ляг спиной, голова свисает\n2. Диск на лоб\n3. Плавно поднимай и опускай"},
+    {name:"Изометрия шеи",muscles:"Шея (статика)",sets:"3×30 сек на напр.",rest:30,tech:"1. Ладонь в голову\n2. Давление рукой — сопротивление шеей\n3. 4 направления"}]}},
+},
+forearms:{name:"🦾 Предплечья",cats:{
+  grip:{name:"🤜 Хват и предплечья",list:[
+    {name:"Сгибание кистей со штангой сидя",muscles:"Сгибатели предплечья",sets:"3×15-20",rest:30,tech:"1. Предплечья на коленях\n2. Хват снизу\n3. Опускай на пальцы, скручивай кисть вверх"},
+    {name:"Сгибание кистей со штангой за спиной",muscles:"Сгибатели предплечья",sets:"3×15-20",rest:30,tech:"1. Стоя, штанга сзади\n2. Поднимай только усилием кистей"},
+    {name:"Обратное сгибание запястий",muscles:"Разгибатели предплечья",sets:"3×15-20",rest:30,tech:"1. Хват сверху\n2. Разгибай запястья вверх"},
+    {name:"Прогулка фермера",muscles:"Хват, Трапеции",sets:"3×максимум",rest:90,tech:"1. Тяжёлые гантели\n2. Спина прямая\n3. Иди до отказа хвата"}]}},
+}
+};
+const RECIPES=[
+{name:"Куриная грудка с рисом",kcal:450,protein:45,fat:8,carbs:50,desc:"200г куриной грудки + 100г варёного риса + овощи. Идеально для набора мышечной массы."},
+{name:"Омлет с овощами",kcal:280,protein:22,fat:16,carbs:10,desc:"3 яйца + болгарский перец + шпинат + помидоры. Лёгкий белковый завтрак."},
+{name:"Греческий йогурт с ягодами",kcal:200,protein:18,fat:4,carbs:24,desc:"200г греческого йогурта + 100г ягод + 1 ст.л. мёда. Перекус с пробиотиками."},
+{name:"Тунец с гречкой",kcal:380,protein:38,fat:6,carbs:45,desc:"Банка тунца (130г) + 100г гречки + зелень. Быстро и дёшево."},
+{name:"Творог с орехами",kcal:320,protein:28,fat:14,carbs:18,desc:"200г обезжиренного творога + грецкие орехи + ложка мёда. Идеален на ночь."},
+{name:"Лосось с овощами на пару",kcal:420,protein:40,fat:22,carbs:12,desc:"200г лосося + брокколи + цукини. Источник омега-3 и белка."},
+{name:"Овсянка с бананом",kcal:350,protein:12,fat:7,carbs:62,desc:"60г овсяных хлопьев + 1 банан + молоко. Энергия на утро."},
+{name:"Протеиновый смузи",kcal:300,protein:30,fat:6,carbs:32,desc:"Протеин 1 мерная ложка + молоко 250мл + банан + ягоды."}
+];
+
+const DAYS_RU=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+const DAYS_ORDER=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+
+const MAIN_KB=[];
+const BACK_KB=[];
+const onboardQuestions=[
+{q:"Как тебя зовут?",field:"name",kb:null},
+{q:"Укажи пол:",field:"gender",kb:[["👨 Мужской","👩 Женский"]]},
+{q:"Сколько тебе лет? (число)",field:"age",kb:null},
+{q:"Рост в см? (например: 178)",field:"height",kb:null},
+{q:"Вес в кг? (например: 75.5)",field:"weight",kb:null},
+{q:"Какая твоя цель?",field:"goal",kb:[["🔥 Похудеть","💪 Набрать мышцы"],["⚖️ Поддержать форму","🏃 Выносливость"]]},
+{q:"Уровень подготовки?",field:"level",kb:[["🟢 Новичок"],["🟡 Средний"],["🔴 Продвинутый"]]}
+];
+
+function scrollDown(){setTimeout(()=>{chat.scrollTop=chat.scrollHeight},50)}
+function addMsg(text,type="bot"){const d=document.createElement("div");d.className="msg "+type;d.textContent=text;chat.appendChild(d);scrollDown()}
+function addInlineKb(buttons){const wrap=document.createElement("div");wrap.className="inline-kb";const rows=Array.isArray(buttons[0])?buttons:buttons.map(b=>[b]);rows.forEach(row=>{const rd=document.createElement("div");rd.className="inline-row";row.forEach(btn=>{const b=document.createElement("button");b.className="inline-btn";b.textContent=btn.text;b.onclick=()=>handleCallback(btn.cb,btn.text);rd.appendChild(b)});wrap.appendChild(rd)});chat.appendChild(wrap);scrollDown()}
+function setReplyKb(buttons){
+  replyKb.innerHTML="";
+  if(!buttons||!buttons.length){
+    replyKb.style.display="none";
+    return;
+  }
+  replyKb.style.display="flex";
+  buttons.flat().forEach(text=>{
+    const b=document.createElement("button");
+    b.className="reply-btn";
+    b.textContent=text;
+    b.onclick=()=>{addMsg(text,"user");handleText(text)};
+    replyKb.appendChild(b);
+  });
+}
+function showTyping(ms=700){return new Promise(res=>{const t=document.createElement("div");t.className="typing";t.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';chat.appendChild(t);scrollDown();setTimeout(()=>{chat.removeChild(t);res()},ms)})}
+async function botSay(text,delay=700){await showTyping(delay);addMsg(text)}
+function todayStr(){return new Date().toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"})}
+function replaceLastInlineKb(buttons){const kbs=chat.querySelectorAll(".inline-kb");if(!kbs.length)return;const wrap=kbs[kbs.length-1];wrap.innerHTML="";const rows=Array.isArray(buttons[0])?buttons:buttons.map(b=>[b]);rows.forEach(row=>{const rd=document.createElement("div");rd.className="inline-row";row.forEach(btn=>{const b=document.createElement("button");b.className="inline-btn";b.textContent=btn.text;b.onclick=()=>handleCallback(btn.cb,btn.text);rd.appendChild(b)});wrap.appendChild(rd)});}
+function renderBuilderKb(isNew=false){const keys=Object.keys(EXERCISES);const rows=[];let row=[];keys.forEach((k,i)=>{const isSel=(userData.builderActive||[]).includes(k);row.push({text:(isSel?"✅ ":"")+EXERCISES[k].name,cb:"build_toggle_"+k});if(row.length===2||i===keys.length-1){rows.push(row);row=[]}});if((userData.builderActive||[]).length>0)rows.push([{text:"🚀 Сгенерировать план",cb:"build_finish"}]);if(isNew)addInlineKb(rows);else replaceLastInlineKb(rows);}
+
+// =================== ТАЙМЕР (улучшенный: +30с) ===================
+function startRestTimer(seconds){
+if(timerInterval){clearInterval(timerInterval);timerInterval=null}
+timerRemaining=seconds;timerTotal=seconds;
+const wrap=document.createElement("div");wrap.className="timer-wrap";
+wrap.innerHTML=`<div class="timer-label">⏱ Отдых между подходами</div><div class="timer-display" id="tn">${seconds}</div><div class="timer-bar"><div class="timer-fill" id="tf" style="width:100%"></div></div><div class="timer-btns"><button class="t-stop" id="ts">■ Стоп</button><button class="t-add" id="ta">+30с</button><button class="t-restart" id="tr">↻ Заново</button></div>`;
+chat.appendChild(wrap);scrollDown();
+timerNumEl=wrap.querySelector("#tn");timerFillEl=wrap.querySelector("#tf");
+function tick(){timerRemaining--;if(timerRemaining<0){clearInterval(timerInterval);timerInterval=null;timerNumEl.textContent="✅";timerNumEl.style.color="#27ae60";timerFillEl.style.width="0%";try{if(navigator.vibrate)navigator.vibrate(200)}catch(e){}return}timerNumEl.textContent=timerRemaining;timerFillEl.style.width=Math.round(timerRemaining/timerTotal*100)+"%"}
+timerInterval=setInterval(tick,1000);
+wrap.querySelector("#ts").onclick=()=>{if(timerInterval){clearInterval(timerInterval);timerInterval=null}timerNumEl.textContent="⏸";timerNumEl.style.color="#888"};
+wrap.querySelector("#ta").onclick=()=>{timerRemaining+=30;timerTotal=Math.max(timerTotal,timerRemaining);if(!timerInterval)timerInterval=setInterval(tick,1000);timerNumEl.textContent=timerRemaining;timerNumEl.style.color="#2aabee";timerFillEl.style.width=Math.round(timerRemaining/timerTotal*100)+"%"};
+wrap.querySelector("#tr").onclick=()=>{if(timerInterval)clearInterval(timerInterval);timerRemaining=timerTotal;timerNumEl.textContent=timerRemaining;timerNumEl.style.color="#2aabee";timerFillEl.style.width="100%";timerInterval=setInterval(tick,1000)};
+}
+
+// =================== ГРАФИК ВЕСА ===================
+function drawWeightChart(){
+if(weightHistory.length<2)return;
+const wrap=document.createElement("div");wrap.className="chart-wrap";
+const canvas=document.createElement("canvas");canvas.width=300;canvas.height=160;
+wrap.appendChild(canvas);chat.appendChild(wrap);scrollDown();
+const ctx=canvas.getContext("2d");const data=weightHistory.slice(-15);
+const weights=data.map(d=>d.weight);const minW=Math.min(...weights)-1;const maxW=Math.max(...weights)+1;const range=maxW-minW||1;
+const padL=40,padR=10,padT=15,padB=30,w=canvas.width,h=canvas.height,plotW=w-padL-padR,plotH=h-padT-padB;
+ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);
+ctx.strokeStyle="#eee";ctx.lineWidth=1;const steps=4;
+for(let i=0;i<=steps;i++){const y=padT+plotH*(1-i/steps);ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(w-padR,y);ctx.stroke();ctx.fillStyle="#999";ctx.font="10px sans-serif";ctx.textAlign="right";ctx.fillText((minW+range*i/steps).toFixed(1),padL-4,y+3)}
+ctx.strokeStyle="#2aabee";ctx.lineWidth=2.5;ctx.lineJoin="round";ctx.beginPath();
+data.forEach((d,i)=>{const x=padL+plotW*i/(data.length-1);const y=padT+plotH*(1-(d.weight-minW)/range);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke();
+data.forEach((d,i)=>{const x=padL+plotW*i/(data.length-1);const y=padT+plotH*(1-(d.weight-minW)/range);ctx.fillStyle="#2aabee";ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()});
+ctx.fillStyle="#999";ctx.font="9px sans-serif";ctx.textAlign="center";
+const labelStep=Math.max(1,Math.floor(data.length/5));
+data.forEach((d,i)=>{if(i%labelStep===0||i===data.length-1){const x=padL+plotW*i/(data.length-1);ctx.fillText(d.date.slice(0,5),x,h-5)}});
+ctx.fillStyle="#333";ctx.font="bold 11px sans-serif";ctx.textAlign="left";ctx.fillText("📈 Динамика веса (кг)",padL,11);
+}
+
+// =================== ОНБОРДИНГ ===================
+async function startOnboarding(){onboardStep=0;state="onboarding";await botSay("👋 Привет! Я твой фитнес-помощник.\n\nДавай заполним профиль — 1 минута!");askOnboardStep()}
+async function askOnboardStep(){const q=onboardQuestions[onboardStep];if(!q)return;await showTyping(500);addMsg(q.q);setReplyKb(q.kb||[])}
+async function handleOnboard(text){
+const q=onboardQuestions[onboardStep];if(!q)return;let val=text.trim();
+if(q.field==="age"){const n=parseInt(val);if(isNaN(n)){await botSay("Введи число, например: 25");return}val=n}
+if(q.field==="height"){const n=parseInt(val);if(isNaN(n)){await botSay("Введи число, например: 178");return}val=n}
+if(q.field==="weight"){const n=parseFloat(val.replace(",","."));if(isNaN(n)){await botSay("Введи число, например: 75.5");return}val=n}
+userData[q.field]=val;onboardStep++;saveData();
+if(onboardStep>=onboardQuestions.length)await finishOnboarding();else await askOnboardStep();
+}
+async function finishOnboarding(){
+state="main";if(userData.weight)weightHistory.push({date:todayStr(),weight:userData.weight});saveData();
+await showTyping(800);
+addMsg("✅ Профиль сохранён!\n\n👤 "+userData.name+" | "+userData.gender+"\n📏 "+userData.height+" см | ⚖️ "+userData.weight+" кг\n🎯 "+userData.goal+"\n🏅 "+userData.level+"\n\nВыбирай раздел!");
+setReplyKb(MAIN_KB);
+}
+
+function calcKbzhu(){
+const w=userData.weight||75,h=userData.height||175,age=userData.age||25,gender=userData.gender||"",goal=userData.goal||"";
+let bmr=gender.includes("Муж")?10*w+6.25*h-5*age+5:10*w+6.25*h-5*age-161;
+let tdee=Math.round(bmr*1.55);let kcal,protein,fat;
+if(goal.includes("Похуд")){kcal=tdee-400;protein=Math.round(w*1.8);fat=Math.round(w*0.9)}
+else if(goal.includes("Набр")){kcal=tdee+350;protein=Math.round(w*2);fat=Math.round(w*1)}
+else{kcal=tdee;protein=Math.round(w*1.6);fat=Math.round(w*1)}
+return{kcal,protein,fat,carbs:Math.round((kcal-protein*4-fat*9)/4)};
+}
+
+// =================== ОБРАБОТЧИКИ ===================
+async function handleText(text){
+if(state==="onboarding"){await handleOnboard(text);return}
+if(text==="🏠 Главное меню"){state="main";await botSay("Главное меню:");setReplyKb(MAIN_KB);return}
+if(text==="✅ Готово"){state="main";await botSay("Дневник питания сохранён 💾");setReplyKb(MAIN_KB);return}
+if(state==="waiting_weight"){const w=parseFloat(text.replace(",","."));if(isNaN(w)){await botSay("Введи число, например: 74.5");return}userData.weight=w;weightHistory.push({date:todayStr(),weight:w});state="main";saveData();await botSay("✅ Вес обновлён: "+w+" кг\n📈 Записей: "+weightHistory.length);setReplyKb(MAIN_KB);return;}
+if(state==="waiting_water"){const amt=parseInt(text.trim());if(isNaN(amt)||amt<=0){await botSay("Введи число (мл), например: 150");return}const today=todayStr();waterHistory[today]=(waterHistory[today]||0)+amt;saveData();state="main";await botSay("✅ Добавлено: +"+amt+" мл");await showWaterTracker();return;}
+if(state==="food_log"){const parts=text.trim().split(" ");const kcal=parseInt(parts[parts.length-1]);if(!isNaN(kcal)&&parts.length>1){const name=parts.slice(0,-1).join(" ");const today=todayStr();if(!foodHistory[today])foodHistory[today]=[];foodHistory[today].push({name,kcal});saveData();const total=foodHistory[today].reduce((s,x)=>s+x.kcal,0);const norm=userData.weight?calcKbzhu().kcal:2000;const left=norm-total;await botSay("✅ Записано: "+name+" — "+kcal+" ккал\n\n📊 Сегодня: "+total+" ккал\n🎯 Норма: "+norm+" ккал\n"+(left>0?"💚 Осталось: "+left+" ккал":"🔴 Превышено на "+Math.abs(left)+" ккал")+"\n\nДобавить ещё? Введи «Название продукта и калории» или нажми «Готово»");setReplyKb([["✅ Готово"]]);}else{await botSay("Введи в формате:\nКурица 250\nОвсянка 300");}return;}
+
+if(state==="warmup_calc"){
+  const w = parseFloat(text.replace(",", "."));
+  if(isNaN(w) || w <= 0){
+    await botSay("Введи корректный вес, например: 80");
+    return;
+  }
+  // Formula: Empty bar -> 40% -> 60% -> 80%
+  // Assuming empty bar is 20kg.
+  let msg = `🧮 Разминка для рабочего веса ${w} кг:\n\n`;
+  if(w <= 20) {
+    msg += "С таким весом можно использовать легкие гантели или разминаться без веса.";
+  } else {
+    msg += `1️⃣ Пустой гриф (20 кг) × 12-15 повт\n`;
+    msg += `2️⃣ ${Math.max(20, Math.round(w*0.4/2.5)*2.5)} кг × 8-10 повт (40%)\n`;
+    msg += `3️⃣ ${Math.max(20, Math.round(w*0.6/2.5)*2.5)} кг × 4-6 повт (60%)\n`;
+    msg += `4️⃣ ${Math.max(20, Math.round(w*0.8/2.5)*2.5)} кг × 1-2 повт (80%)\n\n`;
+    msg += "💪 Теперь рабочий вес!";
+  }
+
+  await botSay(msg);
+  state="main";
+  setReplyKb(MAIN_KB);
+  return;
+}
+if(state==="log_set"){
+  let textClean = text.trim().replace(/,/g, ' ').replace(/\s+/g, ' ');
+  let nums = textClean.replace(/[xх×\*]/gi, ' ').replace(/\s+/g, ' ').split(' ');
+
+  let validSets = [];
+  for(let i=0; i<nums.length-1; i+=2){
+    const w = parseFloat(nums[i]);
+    const r = parseInt(nums[i+1]);
+    if(!isNaN(w) && !isNaN(r)){
+      validSets.push({w, r});
+    }
+  }
+
+  if(validSets.length > 0){
+    const {mgKey,catKey,exIdx}=userData._pendingEx||{};
+    if(mgKey&&catKey&&exIdx!==undefined){
+      const cat=EXERCISES[mgKey]?.cats[catKey];
+      const ex=cat?.list[exIdx];
+      if(ex){
+        const key=ex.name;
+        if(!exerciseHistory[key]) exerciseHistory[key]=[];
+
+        validSets.forEach(s => {
+          exerciseHistory[key].push({date:todayStr(), weight:s.w, reps:s.r});
+        });
+
+        saveData();
+        state="main";
+        const best=exerciseHistory[key].reduce((b,s)=>s.weight>b.weight?s:b,exerciseHistory[key][0]);
+
+        let setsMsg = validSets.map((s, idx) => `Подход ${idx+1}: ${s.w} кг × ${s.r}`).join("\n");
+        if(validSets.length === 1) setsMsg = `📦 ${validSets[0].w} кг × ${validSets[0].r} повт`;
+
+        await botSay("✅ Подход(ы) записаны!\n💪 " + ex.name + "\n" + setsMsg + "\n\n🏆 Рекорд: " + best.weight + " кг × " + best.reps + " повт");
+
+        addInlineKb([
+          [{text:"➕ Ещё подход",cb:"logset_"+mgKey+"_"+catKey+"_"+exIdx}],
+          [{text:"🔙 К упражнению",cb:"ex_"+mgKey+"_"+catKey+"_"+exIdx}]
+        ]);
+        setReplyKb(MAIN_KB);
+        return;
+      }
+    }
+  }
+  await botSay("Введи формат:\n80 10 (вес × повторений)\n\nМожно сразу несколько:\n45 12, 45 10, 38 12");
+  addInlineKb([[{text:"❌ Отменить",cb:"cancel_logset"}]]);
+  return;
+}
+const menu={ "📅 Программы":showProgramsMenu,"📊 Прогресс":showProgress,"🍎 Питание":showNutrition,"📅 Календарь":showCalendar,"🛠 Органайзер":showOrganizerMenu,"🏆 Достижения":showAchievements,"👤 Профиль":showProfile,"📚 Справочник":showGuideMenu,"💬 Поддержка":showSupport };
+const fn=menu[text];if(fn) await fn(); else await botSay("Используй кнопки меню 👇");
+}
+async function handleCallback(cb,label){
+  
+  if(cb==="organizer_exercises"){await showMuscleMenu();return;}
+  if(cb==="organizer_calories"){await showFoodLog();return;}
+  if(cb==="organizer_water"){await showWaterTracker();return;}
+  if(cb==="organizer_timer"){await showTimerMenu();return;}
+if(cb==="open_profile"){await showProfile();return;}
+  if(cb==="open_progress"){await showProgress();return;}
+  if(cb==="open_achievements"){await showAchievements();return;}
+  if(cb==="open_support"){await showSupport();return;}
+
+if(!cb.startsWith("build_toggle_")) addMsg(label,"user");
+
+if(cb==="back_programs"){await showProgramsMenu();return;}
+if(cb==="back_muscles"){await showMuscleMenu();return;}
+if(cb==="build_start"){userData.builderActive=[];await showTyping(400);addMsg("🛠 Конструктор тренировки\n\nОтметь группы мышц:");renderBuilderKb(true);return;}
+if(cb.startsWith("build_toggle_")){const k=cb.replace("build_toggle_","");userData.builderActive=userData.builderActive||[];if(userData.builderActive.includes(k))userData.builderActive=userData.builderActive.filter(x=>x!==k);else userData.builderActive.push(k);renderBuilderKb(false);return;}
+if(cb==="build_finish"){const sel=userData.builderActive;if(!sel||!sel.length)return;let title="Своя: "+sel.map(k=>EXERCISES[k].name.replace(/[^А-Яа-яЁё ]/g,"").trim()).join(" + ");let text="🛠 "+title+"\n\n";sel.forEach(k=>{const g=EXERCISES[k];text+="🔸 "+g.name+":\n";const allEx=[];Object.values(g.cats).forEach(c=>allEx.push(...c.list));allEx.slice(0,2).forEach(ex=>{text+="— "+ex.name+" ("+ex.sets+")\n"});text+="\n"});userData._customTitle=title;saveData();await botSay(text.trim());addInlineKb([[{text:"✅ Засчитать тренировку",cb:"done_custom"}]]);setReplyKb(BACK_KB);return;}
+if(cb.startsWith("water_add_")){const amt=parseInt(cb.split("_")[2]);const today=todayStr();waterHistory[today]=(waterHistory[today]||0)+amt;saveData();await showWaterTracker();return;}
+if(cb==="water_custom"){state="waiting_water";await botSay("Введи объём в мл:");return;}
+if(cb==="water_reset"){const today=todayStr();waterHistory[today]=0;saveData();await showWaterTracker();return;}
+if(cb==="guide_main"){await showGuideMenu();return;}
+if(cb.startsWith("guide_cat_")){await showGuideCategory(cb.replace("guide_cat_",""));return;}
+if(cb.startsWith("gART|")){const p=cb.split("|");await showGuideArticle(p[1],p[2]);return;}
+if(cb.startsWith("sc_")){const p=cb.split("_");await showSubcatList(p[1],p[2]);return;}
+if(cb.startsWith("rest_t_")){startRestTimer(parseInt(cb.split("_")[2]));return;}
+if(cb.startsWith("prog_day_")){const p=cb.replace("prog_day_","").split("_");await showProgramDay(p[0],parseInt(p[1]));return;}
+if(cb==="show_nutrition"){await showNutrition();return;}
+if(cb.startsWith("diet_") && !cb.startsWith("dietday_")){await showDietPlan(cb.replace("diet_",""));return;}
+if(cb.startsWith("dietday_")){const p=cb.split("_");await showDietDay(p[1], parseInt(p[2]));return;}
+if(cb==="back_main"){state="main";await botSay("Главное меню:");setReplyKb(MAIN_KB);return}
+if(cb==="back_muscles"){await showMuscleMenu();return}
+if(cb==="back_programs"){await showProgramsMenu();return}
+if(cb==="update_weight"){state="waiting_weight";await botSay("Введи новый вес (кг):");setReplyKb(BACK_KB);return}
+if(cb==="show_weight_history"){await showWeightHistory();return}
+if(cb==="show_workout_log"){await showWorkoutLog();return}
+if(cb==="show_weight_chart"){await showTyping(400);drawWeightChart();return}
+if(cb==="clear_all_data"){clearData();
+  userData={};
+  weightHistory=[];
+  workoutLog=[];
+  foodHistory={};
+  exerciseHistory={};
+  plan={};
+  waterHistory={};
+  calendarMarks={};
+  state="start";await botSay("🗑️ Все данные удалены.\nНапиши /start чтобы начать заново");setReplyKb(BACK_KB);return}
+if(cb.startsWith("timer_")){startRestTimer(parseInt(cb.replace("timer_","")));return}
+if(cb.startsWith("muscle_")){await showMuscleSubcats(cb.replace("muscle_",""));return}
+if(cb.startsWith("ex_")){const p=cb.split("_");await showExercise(p[1],p[2],parseInt(p[3]));return}
+
+
+if(cb==="warmup"){
+  state="warmup_calc";
+  await showTyping(300);
+  addMsg("🧮 Калькулятор разминки\n\nВведи рабочий вес (в кг):\nНапример: 80");
+  addInlineKb([[{text:"❌ Отмена",cb:"cancel_logset"}]]);
+  setReplyKb(BACK_KB);
+  return;
+}
+
+if(cb.startsWith("repeatlast_")){
+  const p=cb.split("_");
+  const mg=p[1], cat=p[2], eIdx=parseInt(p[3]), pKey=p[4], dIdx=parseInt(p[5]);
+  const ex = EXERCISES[mg]?.cats[cat]?.list[eIdx];
+  if(!ex)return;
+
+  const hist = exerciseHistory[ex.name] || [];
+  const tStr = todayStr();
+  const pastDates = [...new Set(hist.map(s=>s.date))].filter(d=>d!==tStr);
+
+  if(pastDates.length>0){
+    const lastD = pastDates[pastDates.length-1];
+    const lastSets = hist.filter(s=>s.date===lastD);
+
+    lastSets.forEach(s => {
+      exerciseHistory[ex.name].push({date:tStr, weight:s.weight, reps:s.reps});
+    });
+    saveData();
+    await showTyping(300);
+    // Reload the program day view to show updated stats
+    await showProgramDay(pKey, dIdx);
+  }
+  return;
+}
+
+if(cb==="cancel_logset"){
+  state="main";
+  await botSay("Ввод отменён ❌");
+  setReplyKb(MAIN_KB);
+  return;
+}
+if(cb.startsWith("logset_")){
+  const p=cb.split("_");
+  state="log_set";
+  userData._pendingEx={mgKey:p[1],catKey:p[2],exIdx:parseInt(p[3])};
+  saveData();
+  await showTyping(300);
+  addMsg("Введи вес и повторения:\nНапример: 60 12\n\nМожно сразу несколько:\n45 12, 45 10, 38 12");
+  addInlineKb([[{text:"❌ Отмена",cb:"cancel_logset"}]]);
+  setReplyKb(BACK_KB);
+  return;
+}
+if(cb.startsWith("exhist_")){await showExerciseHistory(cb.replace("exhist_",""));return}
+if(cb.startsWith("prog_") && !cb.startsWith("prog_day_")){await showProgram(cb.replace("prog_",""));return}
+if(cb.startsWith("done_")){let pName="";if(cb==="done_custom")pName=userData._customTitle||"Своя тренировка";else{const key=cb.replace("done_","");pName=PROGRAMS[key]?PROGRAMS[key].name:key;}userData.workouts=(userData.workouts||0)+1;workoutLog.push({date:todayStr(),program:pName});saveData();await botSay("✅ Тренировка засчитана!\n🏅 Всего выполнено: "+userData.workouts);setReplyKb(MAIN_KB);return;}
+if(cb==="food_today"){await showFoodToday();return}
+if(cb==="food_add"){state="food_log";await botSay("Введи продукт и калории:\nФормат: Курица 250\nОвсянка 300");setReplyKb([["✅ Готово"]]);return}
+if(cb==="recipe_suggest"){await showRecipes();return}
+}
+
+// =================== ТАЙМЕР МЕНЮ ===================
+async function showTimerMenu(){await showTyping(400);addMsg("⏱ Таймер отдыха\n\nВыбери время:");
+addInlineKb([[{text:"30 сек",cb:"timer_30"},{text:"45 сек",cb:"timer_45"}],[{text:"60 сек",cb:"timer_60"},{text:"90 сек",cb:"timer_90"}],[{text:"120 сек",cb:"timer_120"},{text:"180 сек",cb:"timer_180"}]]);setReplyKb(BACK_KB)}
+
+// =================== УПРАЖНЕНИЯ ===================
+
+async function showOrganizerMenu(){
+await showTyping(400);
+addMsg("🛠 Органайзер\n\nВыберите нужный инструмент:");
+addInlineKb([
+  [
+    {text:"🏋️ База упражн.",cb:"organizer_exercises"},
+    {text:"📓 Счётчик ккал",cb:"organizer_calories"}
+  ],
+  [
+    {text:"💧 Питьевой режим",cb:"organizer_water"},
+    {text:"⏱ Таймер",cb:"organizer_timer"}
+  ]
+]);
+setReplyKb(BACK_KB);
+}
+
+async function showMuscleMenu(){await showTyping(500);addMsg("Выбери группу мышц:");
+const btns=Object.keys(EXERCISES).map(k=>({text:EXERCISES[k].name,cb:"muscle_"+k}));
+addInlineKb(btns);setReplyKb(BACK_KB)}
+
+async function showMuscleSubcats(key){const g=EXERCISES[key];if(!g)return;await showTyping(300);
+addMsg(g.name+" — выбери раздел:");
+const rows=Object.entries(g.cats).map(([ck,cat])=>[{text:cat.name+" ("+cat.list.length+")",cb:"sc_"+key+"_"+ck}]);
+rows.push([{text:"🔙 К группам мышц",cb:"back_muscles"}]);
+addInlineKb(rows);setReplyKb(BACK_KB)}
+
+async function showSubcatList(mgKey,catKey){const cat=EXERCISES[mgKey]?.cats[catKey];if(!cat)return;await showTyping(300);
+addMsg(EXERCISES[mgKey].name+" — "+cat.name+"\nВыбери упражнение:");
+const rows=cat.list.map((ex,i)=>[{text:ex.name,cb:"ex_"+mgKey+"_"+catKey+"_"+i}]);
+rows.push([{text:"🔙 К разделам",cb:"muscle_"+mgKey}]);
+addInlineKb(rows);setReplyKb(BACK_KB)}
+
+async function showExercise(mgKey,catKey,idx){
+const cat=EXERCISES[mgKey]?.cats[catKey];if(!cat||!cat.list[idx])return;const ex=cat.list[idx];
+await showTyping(500);
+const hist=exerciseHistory[ex.name];let histText="";
+if(hist&&hist.length){const last=hist[hist.length-1];const best=hist.reduce((b,s)=>s.weight>b.weight?s:b,hist[0]);histText="\n\n📝 Последний: "+last.weight+"кг×"+last.reps+"\n🏆 Рекорд: "+best.weight+"кг×"+best.reps;}
+addMsg("🏋️ "+ex.name+"\n\n🎯 Мышцы: "+ex.muscles+"\n📊 Подходы: "+ex.sets+"\n⏱ Отдых: "+ex.rest+" сек\n\n📋 Техника:\n"+ex.tech+histText);
+addInlineKb([[{text:"⏱ Таймер "+ex.rest+"с",cb:"rest_t_"+ex.rest}],[{text:"➕ Записать подход",cb:"logset_"+mgKey+"_"+catKey+"_"+idx}],[{text:"🧮 Калькулятор разминки",cb:"warmup"}],[{text:"📊 История",cb:"exhist_"+ex.name}],[{text:"🔙 К списку",cb:"sc_"+mgKey+"_"+catKey}]]);
+setReplyKb(BACK_KB)}
+
+async function showProgram(key){const prog=PROGRAMS[key];if(!prog)return;await showTyping(400);
+addMsg("📅 "+prog.name+"\n\n"+prog.desc+"\n\nВыбери день тренировки:");
+const rows=prog.days.map((day,i)=>[{text:day.name,cb:"prog_day_"+key+"_"+i}]);
+rows.push([{text:"🔙 К программам",cb:"back_programs"}]);
+addInlineKb(rows);setReplyKb(BACK_KB);}
+
+
+async function showProgramDay(key,dayIdx){
+  const prog=PROGRAMS[key];
+  if(!prog)return;
+  const day=prog.days[dayIdx];
+  if(!day)return;
+
+  await showTyping(500);
+  let text=prog.name+" — "+day.name+"\n\n";
+  const rows=[];
+  const tStr = todayStr();
+
+  day.exercises.forEach((e,i)=>{
+    const ex = EXERCISES[e.mgKey]?.cats[e.catKey]?.list[e.exIdx];
+    if(ex){
+      text += (i+1)+". "+ex.name+" — "+ex.sets+"\n";
+
+      // Ищем историю подходов
+      const hist = exerciseHistory[ex.name] || [];
+      if(hist.length > 0){
+        // Группируем по датам
+        const byDate = {};
+        hist.forEach(s => {
+          if(!byDate[s.date]) byDate[s.date] = [];
+          byDate[s.date].push(s.weight+"×"+s.reps);
+        });
+
+        const dates = Object.keys(byDate);
+
+        // Сегодняшние подходы
+        if(byDate[tStr]){
+           text += "   ✅ Сегодня: " + byDate[tStr].join(", ") + "\n";
+        }
+
+        // Предыдущая тренировка (последняя дата, которая не сегодня)
+        const pastDates = dates.filter(d => d !== tStr);
+        if(pastDates.length > 0){
+           const lastDate = pastDates[pastDates.length - 1]; // Самая последняя тренировка
+           text += "   🕒 Прошлый раз ("+lastDate.slice(0,5)+"): " + byDate[lastDate].join(", ") + "\n";
+        }
+      }
+
+      text += "\n"; // пустая строка между упражнениями
+      rows.push([{text:(i+1)+". "+ex.name,cb:"ex_"+e.mgKey+"_"+e.catKey+"_"+e.exIdx}]);
+    }
+  });
+
+  addMsg(text.trim());
+  rows.push([{text:"✅ Засчитать тренировку",cb:"done_"+key}]);
+  rows.push([{text:"🔙 К программам",cb:"prog_"+key}]);
+  addInlineKb(rows);
+  setReplyKb(BACK_KB);
+}
+
+async function showExerciseHistory(name){
+await showTyping(400);
+const hist=exerciseHistory[name];
+if(!hist||!hist.length){addMsg("История подходов для «"+name+"» пуста.");return}
+let text="📊 История: "+name+"\n\n";
+hist.slice(-10).forEach((s,i)=>{text+=(i+1)+". "+s.date+" — "+s.weight+" кг × "+s.reps+" повт\n"});
+const best=hist.reduce((b,s)=>s.weight>b.weight?s:b,hist[0]);
+text+="\n🏆 Рекорд: "+best.weight+" кг × "+best.reps+" повт";
+addMsg(text);setReplyKb(BACK_KB);
+}
+
+// =================== ПРОГРАММЫ ===================
+async function showProgramsMenu(){await showTyping(500);addMsg("📅 Программы тренировок\n\nВыбери программу или собери свою:");const rows=[[{text:"🛠 Собрать свою тренировку",cb:"build_start"}]];Object.keys(PROGRAMS).forEach(k=>{rows.push([{text:PROGRAMS[k].name,cb:"prog_"+k}])});addInlineKb(rows);setReplyKb(BACK_KB);}
+
+
+// =================== КАЛЕНДАРЬ ===================
+
+
+// ====== Calendar v2 + manual marks helpers ======
+const CAL2_MONTHS = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+const CAL2_DOW = ["ПН","ВТ","СР","ЧТ","ПТ","СБ","ВС"];
+function cal2Pad2(n){return String(n).padStart(2,'0');}
+function cal2MonthTitle(year, month){
+  const m = CAL2_MONTHS[month] || '';
+  return (m.charAt(0).toUpperCase()+m.slice(1)) + ' ' + year;
+}
+function cal2IsoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+function cal2BuildMonthIndex(year, month){
+  const autoDays = new Set();
+  const manualDays = new Set();
+  const byDay = {};
+
+  (workoutLog || []).forEach(w => {
+    const parts = (w.date || '').split('.');
+    if(parts.length !== 3) return;
+    const d = parseInt(parts[0],10);
+    const m = parseInt(parts[1],10) - 1;
+    const y = parseInt(parts[2],10);
+    if(y === year && m === month && d > 0){
+      autoDays.add(d);
+      byDay[d] = byDay[d] || {auto:[], manual:false};
+      byDay[d].auto.push(w.program || 'Тренировка');
+    }
+  });
+
+  const marks = calendarMarks || {};
+  Object.keys(marks).forEach(ds => {
+    const parts = ds.split('.');
+    if(parts.length !== 3) return;
+    const d = parseInt(parts[0],10);
+    const m = parseInt(parts[1],10) - 1;
+    const y = parseInt(parts[2],10);
+    if(y === year && m === month && d > 0){
+      manualDays.add(d);
+      byDay[d] = byDay[d] || {auto:[], manual:false};
+      byDay[d].manual = true;
+    }
+  });
+
+  const allDays = new Set([...autoDays, ...manualDays]);
+  return {allDays, autoDays, manualDays, byDay};
+}
+function cal2MakeCell(text, className){
+  const el = document.createElement('div');
+  el.className = className;
+  el.textContent = text;
+  return el;
+}
+function cal2RenderInto(wrap, year, month, selectedDay=null){
+  const now = new Date();
+  const isThisMonth = (now.getFullYear() === year && now.getMonth() === month);
+  const today = now.getDate();
+
+  const {allDays, autoDays, manualDays, byDay} = cal2BuildMonthIndex(year, month);
+
+  const first = new Date(year, month, 1);
+  const firstDow = (first.getDay() + 6) % 7; // Mon=0..Sun=6
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const totalCells = firstDow + daysInMonth;
+  const weeks = Math.ceil(totalCells / 7);
+
+  wrap.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'cal2-header';
+  header.innerHTML = `
+    <button class="cal2-nav" type="button" data-delta="-1">‹</button>
+    <div class="cal2-title">${cal2MonthTitle(year, month)}</div>
+    <button class="cal2-nav" type="button" data-delta="1">›</button>
+  `;
+
+  const grid = document.createElement('div');
+  grid.className = 'cal2-grid';
+
+  grid.appendChild(cal2MakeCell('#','cal2-h'));
+  CAL2_DOW.forEach((d,i)=> grid.appendChild(cal2MakeCell(d, 'cal2-h' + (i>=5?' cal2-weekend':''))));
+
+  const details = document.createElement('div');
+  details.className = 'cal2-details';
+  details.textContent = 'Нажмите на день, чтобы увидеть детали и запланировать тренировку.';
+
+  const actionBtn = document.createElement('button');
+  actionBtn.type = 'button';
+  actionBtn.className = 'inline-btn';
+  actionBtn.style.width = '100%';
+  actionBtn.style.marginTop = '8px';
+  actionBtn.textContent = '📅 Запланировать тренировку';
+  actionBtn.disabled = true;
+
+  function setDetailsForDay(dnum){
+    if(!dnum || dnum < 1 || dnum > daysInMonth){
+      details.textContent = 'Нажмите на день, чтобы увидеть детали и запланировать тренировку.';
+      actionBtn.textContent = '📅 Запланировать тренировку';
+      actionBtn.disabled = true;
+      return;
+    }
+
+    const ds = `${cal2Pad2(dnum)}.${cal2Pad2(month+1)}.${year}`;
+    const info = byDay[dnum] || {auto:[], manual:false};
+    const isManual = !!info.manual;
+    const isAuto = (info.auto || []).length > 0;
+    const plannedName = calendarMarks && calendarMarks[ds] && calendarMarks[ds] !== true
+      ? calendarMarks[ds] : null;
+
+    let text = `${ds}\n`;
+    if(isAuto){
+      text += '✅ ' + (info.auto || []).join(', ') + '\n';
+    }
+    if(plannedName){
+      text += '📌 Запланировано: ' + plannedName + '\n';
+    } else if(isManual){
+      text += '📌 Запланировано (без названия)\n';
+    }
+    if(!isAuto && !isManual){
+      text += '😴 Тренировок нет';
+    }
+    details.textContent = text.trim();
+
+    actionBtn.disabled = false;
+
+    if(isManual){
+      actionBtn.textContent = '🗑 Снять запланированную тренировку';
+      actionBtn.style.background = '#ff5555';
+      actionBtn.style.color = '#fff';
+      actionBtn.onclick = () => {
+        if(!calendarMarks) calendarMarks = {};
+        delete calendarMarks[ds];
+        saveData();
+        const old = wrap.querySelector('.cal-picker');
+        if(old) old.remove();
+        cal2RenderInto(wrap, year, month, dnum);
+      };
+    } else {
+      actionBtn.textContent = '📅 Запланировать тренировку';
+      actionBtn.style.background = '';
+      actionBtn.style.color = '';
+      actionBtn.onclick = () => {
+        const old = wrap.querySelector('.cal-picker');
+        if(old){ old.remove(); return; }
+
+        const picker = document.createElement('div');
+        picker.className = 'cal-picker';
+        picker.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;';
+
+        const progOptions = Object.keys(PROGRAMS).map(k => ({ name: PROGRAMS[k].name, key: k }));
+        const extraOptions = [
+          { name: '🏃 Кардио' },
+          { name: '🧘 Растяжка' },
+          { name: '🏋️ Своя тренировка' }
+        ];
+
+        [...progOptions.map(o => o.name), ...extraOptions.map(o => o.name)].forEach(name => {
+          const b = document.createElement('button');
+          b.className = 'inline-btn';
+          b.textContent = name;
+          b.style.flex = '1 1 calc(50% - 6px)';
+          b.onclick = () => {
+            if(!calendarMarks) calendarMarks = {};
+            calendarMarks[ds] = name;
+            saveData();
+            picker.remove();
+            cal2RenderInto(wrap, year, month, dnum);
+          };
+          picker.appendChild(b);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'inline-btn';
+        cancelBtn.textContent = '✕ Отмена';
+        cancelBtn.style.cssText = 'width:100%;background:#eee;color:#333;margin-top:2px;';
+        cancelBtn.onclick = () => picker.remove();
+        picker.appendChild(cancelBtn);
+
+        actionBtn.after(picker);
+      };
+    }
+  }
+
+  for(let w=0; w<weeks; w++){
+    const rowStart = new Date(year, month, 1 + (w*7 - firstDow));
+    grid.appendChild(cal2MakeCell(String(cal2IsoWeek(rowStart)), 'cal2-weeknum'));
+
+    for(let i=0;i<7;i++){
+      const cellIndex = w*7 + i;
+      const dnum = cellIndex - firstDow + 1;
+
+      const cell = document.createElement('div');
+      cell.className = 'cal2-cell';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cal2-daybtn';
+
+      if(dnum < 1 || dnum > daysInMonth){
+        btn.classList.add('cal2-daybtn--empty');
+        btn.textContent = '';
+        btn.disabled = true;
+      } else {
+        const isWeekend = (i >= 5);
+        if(isWeekend) btn.classList.add('cal2-daybtn--weekend');
+
+        const isAuto = autoDays.has(dnum);
+        const isManual = manualDays.has(dnum);
+        if(isAuto) btn.classList.add('cal2-daybtn--workout');
+        else if(isManual) btn.classList.add('cal2-daybtn--manual');
+
+        if(isThisMonth && dnum === today) btn.classList.add('cal2-daybtn--today');
+
+        // Show planned workout name under day number
+        const ds2 = `${cal2Pad2(dnum)}.${cal2Pad2(month+1)}.${year}`;
+        const plannedVal = calendarMarks && calendarMarks[ds2] && calendarMarks[ds2] !== true
+          ? calendarMarks[ds2] : null;
+
+        if(isManual && plannedVal){
+          btn.style.cssText = 'font-size:9px;line-height:1.2;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+          const numSpan = document.createElement('span');
+          numSpan.style.cssText = 'font-size:13px;font-weight:700;';
+          numSpan.textContent = String(dnum);
+          const nameSpan = document.createElement('span');
+          nameSpan.style.cssText = 'font-size:8px;font-weight:600;max-width:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+          // shorten name: strip emoji prefix if any
+          const shortName = plannedVal.replace(/^[^\wЀ-ӿ]+/,'').slice(0,6);
+          nameSpan.textContent = shortName;
+          btn.appendChild(numSpan);
+          btn.appendChild(nameSpan);
+        } else {
+          btn.textContent = String(dnum);
+        }
+
+        btn.onclick = () => {
+          selectedDay = dnum;
+          setDetailsForDay(dnum);
+        };
+      }
+
+      cell.appendChild(btn);
+      grid.appendChild(cell);
+    }
+  }
+
+  const legend = document.createElement('div');
+  legend.className = 'cal2-legend';
+  legend.innerHTML = `
+    <span class="cal2-pill"><span class="cal2-dot cal2-dot--workout"></span> тренировка</span>
+    <span class="cal2-pill"><span class="cal2-dot cal2-dot--manual"></span> запланировано</span>
+    <span class="cal2-pill"><span class="cal2-dot cal2-dot--today"></span> сегодня</span>
+    <span class="cal2-pill"><span class="cal2-dot cal2-dot--weekend"></span> выходные</span>
+  `;
+
+  const autoCount = autoDays.size;
+  const manualOnlyCount = [...manualDays].filter(d => !autoDays.has(d)).length;
+  const allCount = allDays.size;
+
+  const count = document.createElement('div');
+  count.className = 'cal2-count';
+  count.innerHTML = `В этом месяце: <b>${allCount}</b> дней (${autoCount} завершено, ${manualOnlyCount} запланировано)`;
+
+  const note = document.createElement('div');
+  note.className = 'cal2-note';
+  note.textContent = 'Ручные отметки влияют только на календарь и не меняют счётчик тренировок в профиле/достижениях.';
+
+  wrap.appendChild(header);
+  wrap.appendChild(grid);
+  wrap.appendChild(legend);
+  wrap.appendChild(count);
+  wrap.appendChild(details);
+  wrap.appendChild(actionBtn);
+  wrap.appendChild(note);
+
+  header.querySelectorAll('.cal2-nav').forEach(b => {
+    b.onclick = () => {
+      const delta = parseInt(b.dataset.delta, 10);
+      let nm = month + delta;
+      let ny = year;
+      if(nm < 0){nm = 11; ny--;}
+      if(nm > 11){nm = 0; ny++;}
+      cal2RenderInto(wrap, ny, nm, null);
+    };
+  });
+
+  if(selectedDay) setDetailsForDay(selectedDay);
+}
+
+async function showCalendar(){
+  await showTyping(450);
+
+  const calBox = document.createElement('div');
+  calBox.className = 'msg bot cal2-bubble';
+  calBox.innerHTML = `<b>📅 Календарь тренировок</b><br><br><div class="cal2-wrap"></div>`;
+  chat.appendChild(calBox);
+
+  const wrap = calBox.querySelector('.cal2-wrap');
+  const now = new Date();
+  cal2RenderInto(wrap, now.getFullYear(), now.getMonth(), now.getDate());
+
+  
+  setReplyKb(BACK_KB);
+  scrollDown();
+}
+
+
+// =================== ПРОГРЕСС И ДОСТИЖЕНИЯ ===================
+async function showProgress(){await showTyping(500);
+const count=userData.workouts||0;
+let wd="";if(weightHistory.length>=2){const first=weightHistory[0].weight,last=weightHistory[weightHistory.length-1].weight;const diff=(last-first).toFixed(1);wd="\n📉 Изменение веса: "+(diff>0?"+":"")+diff+" кг";}
+const exKeys=Object.keys(exerciseHistory);let recStats="";if(exKeys.length>0){recStats="\n💪 Рекорды в базе: "+exKeys.length;}
+addMsg("📊 Твой прогресс\n\n⚖️ Текущий вес: "+(userData.weight||"—")+" кг"+wd+"\n🏋️ Выполнено тренировок: "+count+recStats);
+addInlineKb([
+  [{text:"✏️ Обновить вес",cb:"update_weight"}],
+  [{text:"🏆 Рекорды (Лучшие веса)",cb:"show_records"}],
+  [{text:"📓 Журнал тренировок",cb:"show_workout_log"}],
+  [{text:"📈 График веса",cb:"show_weight_chart"}]
+]);
+setReplyKb(BACK_KB)}
+
+async function showRecords(){await showTyping(400);
+const keys=Object.keys(exerciseHistory);
+if(keys.length===0){await botSay("У тебя пока нет записанных подходов. Начни заниматься и вноси веса!");return;}
+let text="🏆 Твои личные рекорды:\n\n";
+keys.forEach(k=>{const hist=exerciseHistory[k];const best=hist.reduce((b,s)=>s.weight>b.weight?s:b,hist[0]);text+="🔸 "+k+"\n"+best.weight+" кг × "+best.reps+" (дата: "+best.date+")\n\n";});
+addMsg(text.trim());
+addInlineKb([[{text:"🔙 Назад",cb:"show_progress"}]]);
+}
+
+async function showWeightHistory(){await showTyping(400);if(!weightHistory.length){await botSay("Нет записей веса.");return;}let text="История веса:\n";weightHistory.forEach((w,i)=>{text+=(i===0?"🏁 ":"🔹 ")+w.date+" — "+w.weight+" кг\n"});addMsg(text);addInlineKb([[{text:"🔙 Назад",cb:"show_progress"}]]);}
+async function showWorkoutLog(){await showTyping(400);if(!workoutLog.length){await botSay("Журнал пуст. Заверши первую тренировку!");return;}let text="Последние тренировки:\n\n";const recent=workoutLog.slice(-10).reverse();recent.forEach(w=>{text+="📅 "+w.date+" — "+w.program+"\n"});addMsg(text);addInlineKb([[{text:"🔙 Назад",cb:"show_progress"}]]);}
+async function showWeightChart(){await showTyping(600);if(weightHistory.length<2){await botSay("Нужно минимум 2 замера для графика!");return;}const chart=document.createElement("div");chart.className="msg bot chart-box";const canvas=document.createElement("canvas");chart.appendChild(canvas);chat.appendChild(chart);const dates=weightHistory.map(w=>w.date.substring(0,5));const wts=weightHistory.map(w=>w.weight);const minW=Math.floor(Math.min(...wts))-1;const maxW=Math.ceil(Math.max(...wts))+1;new Chart(canvas,{type:"line",data:{labels:dates,datasets:[{label:"Вес (кг)",data:wts,borderColor:"#00a8ff",backgroundColor:"rgba(0,168,255,0.2)",borderWidth:2,tension:0.3,fill:true,pointRadius:4}]},options:{responsive:true,scales:{y:{min:minW,max:maxW}}}});chat.scrollTop=chat.scrollHeight;addInlineKb([[{text:"🔙 Назад",cb:"show_progress"}]]);}
+
+async function showAchievements(){await showTyping(500);
+const count=userData.workouts||0;
+const wCount=weightHistory.length;
+let text="🏆 Достижения:\n\n";
+text+=count>=1?"✅ [Первый шаг] — 1 тренировка\n": "🔒 [Первый шаг] — проведи 1 тренировку\n";
+text+=count>=10?"✅ [Любитель] — 10 тренировок\n": "🔒 [Любитель] — проведи 10 тренировок ("+count+"/10)\n";
+text+=count>=50?"✅ [Киборг] — 50 тренировок\n": "🔒 [Киборг] — проведи 50 тренировок ("+count+"/50)\n";
+text+=wCount>=5?"✅ [Дисциплина] — 5 замеров веса\n": "🔒 [Дисциплина] — 5 раз обнови вес ("+wCount+"/5)\n";
+const hasWater=Object.keys(waterHistory).length>0;
+text+=hasWater?"✅ [Водолаз] — начал пить воду\n": "🔒 [Водолаз] — отметь воду в трекере\n";
+const recs=Object.keys(exerciseHistory).length;
+text+=recs>=5?"✅ [Тяжелоатлет] — 5 рекордов\n": "🔒 [Тяжелоатлет] — внеси 5 упражнений в базу ("+recs+"/5)";
+addMsg(text);
+
+}
+
+// =================== ПИТАНИЕ ===================
+const NUTRITION_PLANS = {
+  loss: {
+    title: "🔥 Для похудения (Дефицит ккал)",
+    desc: "План питания с дефицитом калорий. Акцент на белок и клетчатку. Минимум быстрых углеводов.",
+    days: [
+      "<b>Понедельник</b>\n🍳 Завтрак: Овсянка на воде (50г) с ягодами и корицей, вареное яйцо.\n🍎 Перекус: Горсть миндаля (30г), зеленый чай.\n🍲 Обед: Запеченная куриная грудка (150г) с гречкой (40г) и свежим салатом.\n🥗 Ужин: Нежирный творог (150г) с яблоком.",
+      "<b>Вторник</b>\n🍳 Завтрак: Омлет из 2 яиц с томатами и шпинатом.\n🍎 Перекус: Зеленое яблоко или киви.\n🍲 Обед: Суп пюре из тыквы, кусок отварной говядины (100г).\n🥗 Ужин: Запеченная белая рыба (150г) с брокколи и стручковой фасолью.",
+      "<b>Среда</b>\n🍳 Завтрак: Сырники (в духовке) без сахара с натуральным йогуртом.\n🍎 Перекус: Половинка грейпфрута.\n🍲 Обед: Бурый рис (50г) с индейкой (150г) и тушеными овощами.\n🥗 Ужин: Овощной салат с тунцом (в собственном соку) и оливковым маслом.",
+      "<b>Четверг</b>\n🍳 Завтрак: Цельнозерновой тост с творожным сыром и слабосоленой рыбой.\n🍎 Перекус: Кефир 1% (200мл).\n🍲 Обед: Куриный бульон с кусочками мяса, овощная нарезка.\n🥗 Ужин: Куриное филе на гриле с цветной капустой.",
+      "<b>Пятница</b>\n🍳 Завтрак: Пшенная каша на воде с тыквой.\n🍎 Перекус: Грецкие орехи (20г).\n🍲 Обед: Макароны твердых сортов (40г) с куриным фаршем в томатном соусе.\n🥗 Ужин: Морепродукты тушеные с кабачками и перцем.",
+      "<b>Суббота</b>\n🍳 Завтрак: 2 вареных яйца, огурец, кусочек цельнозернового хлеба.\n🍎 Перекус: Ягодный смузи на воде или кефире.\n🍲 Обед: Чечевица с запеченными грибами и луком.\n🥗 Ужин: Творожная запеканка (без сахара).",
+      "<b>Воскресенье</b>\n🍳 Завтрак: Яичница с грибами и сыром сулугуни.\n🍎 Перекус: Апельсин.\n🍲 Обед: Запеченная скумбрия с овощным рагу.\n🥗 Ужин: Легкий салат из свежей капусты, моркови и отварного яйца."
+    ]
+  },
+  mass: {
+    title: "💪 Для набора массы (Профицит ккал)",
+    desc: "План питания с профицитом калорий. Много сложных углеводов для энергии и белка для мышц.",
+    days: [
+      "<b>Понедельник</b>\n🍳 Завтрак: Овсянка на молоке (100г) с бананом, медом и арахисовой пастой. 2 яйца.\n🍎 Перекус: Протеиновый коктейль или творог с фруктами.\n🍲 Обед: Макароны (100г сухих) с говяжьим фаршем (200г) и сыром.\n🥗 Ужин: Куриная грудка (200г) с рисом (80г) и салатом.",
+      "<b>Вторник</b>\n🍳 Завтрак: 4 яйца (яичница), 2 тоста с маслом и сыром, сок.\n🍎 Перекус: Горсть орехов (50г) и банан.\n🍲 Обед: Гречка (100г) с тушеной свининой/говядиной (200г), овощи.\n🥗 Ужин: Красная рыба (200г) с картофелем (80г) и брокколи.",
+      "<b>Среда</b>\n🍳 Завтрак: Большая порция сырников со сметаной и джемом.\n🍎 Перекус: Гейнер или йогурт с мюсли.\n🍲 Обед: Плов с курицей (большая порция), салат с оливковым маслом.\n🥗 Ужин: Творог (200г) с кефиром и орехами перед сном.",
+      "<b>Четверг</b>\n🍳 Завтрак: Рисовая каша на молоке с сухофруктами, тост с ветчиной.\n🍎 Перекус: Смузи (молоко, банан, творог, овсянка).\n🍲 Обед: Запеченный картофель с мясом по-французски.\n🥗 Ужин: Индейка (200г) с макаронами и овощной нарезкой.",
+      "<b>Пятница</b>\n🍳 Завтрак: Омлет из 4 яиц с беконом и фасолью, хлеб.\n🍎 Перекус: 2 яблока и протеиновый батончик.\n🍲 Обед: Наваристый борщ с мясом, сметаной и черным хлебом.\n🥗 Ужин: Стейк лосося с бурым рисом.",
+      "<b>Суббота</b>\n🍳 Завтрак: Блинчики на кефире с медом, 2 яйца всмятку.\n🍎 Перекус: Бутерброды с куриным филе и зеленью.\n🍲 Обед: Куриные котлеты с картофельным пюре и сливочным маслом.\n🥗 Ужин: Тушеные морепродукты с лапшой удон.",
+      "<b>Воскресенье</b>\n🍳 Завтрак: Кукурузная каша на молоке с изюмом, бутерброд с сыром.\n🍎 Перекус: Творожная масса с фруктами.\n🍲 Обед: Стейк из говядины с овощами гриль и печеным бататом.\n🥗 Ужин: Курица терияки с рисом."
+    ]
+  },
+  tone: {
+    title: "🥑 Здоровый тонус (Поддержание)",
+    desc: "Сбалансированный рацион для поддержания текущего веса, энергии и здоровья (БЖУ 30/30/40).",
+    days: [
+      "<b>Понедельник</b>\n🍳 Завтрак: Мюсли с классическим йогуртом и ягодами.\n🍎 Перекус: Яблоко и 20г миндаля.\n🍲 Обед: Запеченная курица с киноа и овощами.\n🥗 Ужин: Салат «Цезарь» (без сухариков, с легким соусом).",
+      "<b>Вторник</b>\n🍳 Завтрак: Скрэмбл из 2 яиц на тосте из цельнозернового хлеба с авокадо.\n🍎 Перекус: Творожок без добавок.\n🍲 Обед: Крем-суп из шампиньонов, ломтик индейки.\n🥗 Ужин: Запеченная белая рыба с овощами на пару.",
+      "<b>Среда</b>\n🍳 Завтрак: Сырники со сметаной (15%).\n🍎 Перекус: Груша или персик.\n🍲 Обед: Гречневая лапша (соба) с курицей и овощами в соевом соусе.\n🥗 Ужин: Творожная запеканка.",
+      "<b>Четверг</b>\n🍳 Завтрак: Овсяноблин с сыром и помидором.\n🍎 Перекус: Кефир и пара хлебцев.\n🍲 Обед: Паста с морепродуктами в томатном соусе.\n🥗 Ужин: Куриное филе на гриле с легким салатом из свежих овощей.",
+      "<b>Пятница</b>\n🍳 Завтрак: Каша Дружба (рис+пшено) на молоке пополам с водой.\n🍎 Перекус: Горсть грецких орехов.\n🍲 Обед: Телятина тушеная с черносливом и кускус.\n🥗 Ужин: Салат с креветками, рукколой и черри.",
+      "<b>Суббота</b>\n🍳 Завтрак: Яичница-глазунья, цельнозерновой хлеб, овощная нарезка.\n🍎 Перекус: Фруктовый салат (яблоко, банан, киви) с йогуртом.\n🍲 Обед: Красная рыба слабосоленая с отварным картофелем и зеленью.\n🥗 Ужин: Рагу из кабачков, баклажанов и болгарского перца.",
+      "<b>Воскресенье</b>\n🍳 Завтрак: Ленивые вареники из творога с ягодами.\n🍎 Перекус: Смузи из зелени и огурца.\n🍲 Обед: Куриный суп с лапшой, салат из свеклы с чесноком.\n🥗 Ужин: Омлет с овощами и кусочком нежирного сыра."
+    ]
+  }
+};
+
+async function showNutrition(){
+  await showTyping(600);
+  if(!userData.weight){addMsg("Сначала заполни профиль (/start)");return}
+  const{kcal,protein,fat,carbs}=calcKbzhu();
+  addMsg("🍎 Твоя норма КБЖУ\n\n🔥 Калории: "+kcal+" ккал\n🥩 Белки: "+protein+" г\n🥑 Жиры: "+fat+" г\n🍞 Углеводы: "+carbs+" г\n\n(формула Миффлина, цель: "+(userData.goal||"—")+")");
+
+  addMsg("Выбери готовый план питания на неделю:");
+  addInlineKb([
+    [{text:"🔥 Для похудения", cb:"diet_loss"}],
+    [{text:"💪 Для набора массы", cb:"diet_mass"}],
+    [{text:"🥑 Здоровый тонус", cb:"diet_tone"}],
+    [{text:"📓 Дневник калорий", cb:"food_today"}]
+  ]);
+  setReplyKb(BACK_KB);
+}
+
+async function showDietPlan(type) {
+  await showTyping(500);
+  const plan = NUTRITION_PLANS[type];
+  if(!plan) return;
+  addMsg(plan.title + "\n\n" + plan.desc + "\n\nВыбери день недели:");
+  const rows = [];
+  const dayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
+  for(let i=0; i<7; i+=2) {
+    const row = [];
+    row.push({text: dayNames[i], cb: "dietday_" + type + "_" + i});
+    if(i+1 < 7) row.push({text: dayNames[i+1], cb: "dietday_" + type + "_" + (i+1)});
+    rows.push(row);
+  }
+  rows.push([{text:"🔙 Назад к питанию", cb:"show_nutrition"}]);
+  addInlineKb(rows);
+}
+
+async function showDietDay(type, dayIdx) {
+  await showTyping(400);
+  const plan = NUTRITION_PLANS[type];
+  if(!plan) return;
+  const dayText = plan.days[dayIdx];
+  const dBox = document.createElement("div");
+  dBox.className = "msg bot";
+  dBox.innerHTML = dayText;
+  chat.appendChild(dBox);
+  scrollDown();
+  addInlineKb([[{text:"🔙 К дням недели", cb:"diet_" + type}]]);
+}
+
+async function showFoodLog(){await showTyping(400);
+const today=todayStr();const todayFoods=foodHistory[today]||[];
+const total=todayFoods.reduce((s,x)=>s+x.kcal,0);
+const norm=userData.weight?calcKbzhu().kcal:2000;
+let text="📓 Дневник питания — "+today+"\n\n";
+if(todayFoods.length){todayFoods.forEach((f,i)=>{text+=(i+1)+". "+f.name+" — "+f.kcal+" ккал\n"});const left=norm-total;text+="\n📊 Итого: "+total+" ккал / "+norm+" ккал\n"+(left>0?"💚 Осталось: "+left+" ккал":"🔴 Превышение: "+Math.abs(left)+" ккал")}
+else{text+="Пусто. Добавь первый приём пищи!"}
+addMsg(text.trim());
+addInlineKb([[{text:"➕ Добавить еду",cb:"food_add"}],[{text:"🍳 Подобрать рецепт",cb:"recipe_suggest"}],[{text:"🔙 К питанию",cb:"show_nutrition"}]]);setReplyKb(BACK_KB)}
+
+async function showFoodToday(){await showFoodLog()}
+
+async function showRecipes(){
+await showTyping(500);
+const norm=userData.weight?calcKbzhu():null;
+const sorted=norm?[...RECIPES].sort((a,b)=>Math.abs(a.kcal-norm.kcal/3)-Math.abs(b.kcal-norm.kcal/3)):RECIPES;
+let text="🍳 Рецепты\n\n";
+sorted.slice(0,5).forEach((r,i)=>{text+=(i+1)+". "+r.name+"\n   🔥 "+r.kcal+" ккал | 🥩 "+r.protein+"г | 🥑 "+r.fat+"г | 🍞 "+r.carbs+"г\n   "+r.desc+"\n\n"});
+addMsg(text.trim());addInlineKb([[{text:"📓 Вернуться в дневник",cb:"food_today"}]]);setReplyKb(BACK_KB);
+}
+
+// =================== ДОСТИЖЕНИЯ ===================
+async function showAchievements(){
+await showTyping(500);const total=userData.workouts||0;
+if(!total){addMsg("Пока нет достижений. Начни с первой тренировки! 💪");setReplyKb(BACK_KB);return}
+let text="🏆 Достижения\n\n";
+const blocks=[
+{need:1,label:"Первая тренировка 🎉"},
+{need:5,label:"5 тренировок — разогрев"},
+{need:10,label:"10 тренировок — хороший старт"},
+{need:20,label:"20 тренировок — стабильность"},
+{need:50,label:"50 тренировок — железный характер"},
+{need:100,label:"100 тренировок — чемпион 🏆"}
+];
+blocks.forEach(b=>{text+=(total>=b.need?"✅":"⬜")+" "+b.label+" ("+b.need+"+)\n"});
+const setCount=Object.values(exerciseHistory).reduce((s,arr)=>s+arr.length,0);
+text+="\n📝 Подходов записано: "+setCount;
+text+="\n🥗 Дней с дневником: "+Object.keys(foodHistory).length;
+text+="\n\nВсего тренировок: "+total;
+addMsg(text.trim());setReplyKb(BACK_KB);
+}
+
+// =================== ВОДА + СПРАВОЧНИК ===================
+async function showWaterTracker(){await showTyping(400);const today=todayStr();const current=waterHistory[today]||0;const goal=userData.weight?Math.round(userData.weight*30):2000;const percent=Math.min(100,Math.round((current/goal)*100));let text="💧 Трекер воды — "+today+"\n\nВыпито: "+current+" мл из "+goal+" мл\n";const filled=Math.round(percent/10);const empty=10-filled;text+="["+"🟦".repeat(filled)+"⬜".repeat(empty)+"] "+percent+"%\n\n";text+=current>=goal?"✅ Дневная норма выполнена!":"Осталось: "+(goal-current)+" мл";addMsg(text);addInlineKb([[{text:"+250 мл 🥤",cb:"water_add_250"},{text:"✍️ Свой объём",cb:"water_custom"}],[{text:"↩️ Сбросить день",cb:"water_reset"}]]);setReplyKb(BACK_KB);}
+async function showGuideMenu(){await showTyping(400);addMsg("📚 Справочник\n\nВыбери группу мышц:");const rows=[];const keys=Object.keys(GUIDE_DB);for(let i=0;i<keys.length;i+=2){const row=[];row.push({text:GUIDE_DB[keys[i]].title,cb:"guide_cat_"+keys[i]});if(keys[i+1])row.push({text:GUIDE_DB[keys[i+1]].title,cb:"guide_cat_"+keys[i+1]});rows.push(row);}addInlineKb(rows);setReplyKb(BACK_KB);}
+async function showGuideCategory(catKey){await showTyping(300);const cat=GUIDE_DB[catKey];if(!cat)return;addMsg("Раздел: "+cat.title+"\nВыбери упражнение:");const rows=[];const artKeys=Object.keys(cat.articles);if(artKeys.length===0){rows.push([{text:"⏳ Статьи в разработке",cb:"guide_main"}]);}else{artKeys.forEach(k=>{rows.push([{text:"📖 "+cat.articles[k].title,cb:"gART|"+catKey+"|"+k}]);});}rows.push([{text:"🔙 Назад",cb:"guide_main"}]);addInlineKb(rows);}
+async function showGuideArticle(catKey,artKey){await showTyping(600);const cat=GUIDE_DB[catKey];if(!cat||!cat.articles[artKey])return;addMsg(cat.articles[artKey].text);addInlineKb([[{text:"🔙 К списку",cb:"guide_cat_"+catKey},{text:"📚 Справочник",cb:"guide_main"}]]);}
+// =================== ПРОФИЛЬ ===================
+async function showProfile(){await showTyping(400);if(!userData.name){addMsg("Профиль не найден. Напиши /start");return}addMsg("👤 Профиль\n\nИмя: "+userData.name+"\nПол: "+userData.gender+"\nВозраст: "+userData.age+" лет\nРост: "+userData.height+" см\nВес: "+userData.weight+" кг\nЦель: "+userData.goal+"\nУровень: "+userData.level+"\n\n🏅 Тренировок: "+(userData.workouts||0));addInlineKb([
+  [{text:"📊 Прогресс", cb:"open_progress"},{text:"🏆 Достижения", cb:"open_achievements"}],
+  [{text:"📚 Справочник", cb:"guide_main"},{text:"💬 Поддержка", cb:"open_support"}],
+  [{text:"🗑️ Сбросить данные", cb:"clear_all_data"}]
+]);setReplyKb(BACK_KB)}
+
+
+
+async function showSupport(){
+  await showTyping(400);
+  addMsg("💬 Поддержка\n\nНапиши, что не работает или какую функцию добавить.\n\n📩 Контакт: @your_username (замени на свой)\nили email: support@example.com", "bot");
+  addInlineKb([[{text:"👤 В профиль", cb:"open_profile"}]]);
+  setReplyKb(BACK_KB);
+}
+// =================== СТАРТ ===================
+function sendMessage(){const text=msgInput.value.trim();if(!text)return;  msgInput.value="";
+  sendBtn.classList.remove("send-mode");
+  sendBtn.innerText = "🎙️";if(text==="/start"){clearData();
+  userData={};
+  weightHistory=[];
+  workoutLog=[];
+  foodHistory={};
+  exerciseHistory={};
+  plan={};
+  waterHistory={};
+  calendarMarks={};
+  state="start";startOnboarding();return}addMsg(text,"user");handleText(text)}
+sendBtn.addEventListener("click",sendMessage);
+msgInput.addEventListener("keydown",e=>{if(e.key==="Enter")sendMessage()});
+
+(async()=>{
+const saved=loadData();
+if(saved&&saved.userData&&saved.userData.name){
+userData=saved.userData;state=saved.state||"main";onboardStep=saved.onboardStep||0;
+weightHistory=saved.weightHistory||[];workoutLog=saved.workoutLog||[];
+foodHistory=saved.foodHistory||{};exerciseHistory=saved.exerciseHistory||{};plan=saved.plan||{};waterHistory=saved.waterHistory||{};
+  calendarMarks=saved.calendarMarks||{};
+await showTyping(600);
+addMsg("👋 С возвращением, "+userData.name+"!\n\n🏅 Тренировок: "+(userData.workouts||0)+"\n⚖️ Вес: "+(userData.weight||"—")+" кг\n\nВыбирай раздел!");
+setReplyKb(MAIN_KB);
+}else{await showTyping(800);addMsg("💪 Добро пожаловать в FitnessBot!\n\nНапиши /start чтобы начать")}
+})();
+
+</script>
+</body>
+</html>

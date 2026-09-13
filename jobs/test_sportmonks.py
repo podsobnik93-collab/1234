@@ -1,6 +1,14 @@
 from __future__ import annotations
 
+import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# Добавляем корень репозитория в путь поиска Python-модулей.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from sportmonks_client import SportmonksClient
 
